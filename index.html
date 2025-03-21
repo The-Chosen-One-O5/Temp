@@ -1932,4 +1932,38 @@
         // New Functions for PDF Viewer
         function togglePDFViewer() {
             const viewer = document.getElementById('pdfViewer');
-           
+                       if (viewer.style.display === 'block') {
+                viewer.style.display = 'none';
+            } else {
+                viewer.style.display = 'block';
+                const pdfInput = document.getElementById('pdfInput');
+                pdfInput.value = ''; // Reset file input
+                const pdfFrame = document.getElementById('pdfFrame');
+                pdfFrame.src = ''; // Clear previous PDF
+                pdfInput.onchange = () => {
+                    const file = pdfInput.files[0];
+                    if (file && file.type === 'application/pdf') {
+                        const fileURL = URL.createObjectURL(file);
+                        pdfFrame.src = fileURL;
+                        if (isSignedIn) {
+                            points += 10; // Award points for uploading a PDF
+                            document.getElementById('pointsDisplay').innerHTML = `<span style="color: #8e2de2;">⭐</span> Points: ${points}`;
+                            alert('Nice! +10 points for uploading a study PDF.');
+                            updateAnalytics();
+                            saveState();
+                        }
+                    } else {
+                        alert('Please upload a valid PDF file.');
+                    }
+                };
+            }
+        }
+
+        // Prevent distraction penalty when interacting with PDF viewer
+        document.getElementById('pdfViewer').addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent triggering visibilitychange penalty
+        });
+
+    </script>
+</body>
+</html>
