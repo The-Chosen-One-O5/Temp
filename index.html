@@ -275,15 +275,17 @@
                     })
                 });
                 const data = await response.json();
-                if (data.gameId) {
+                if (response.ok && data.gameId) {
                     gameId = data.gameId;
+                    console.log('Game started successfully. Game ID:', gameId);
                     streamLichessGame(gameId);
                 } else {
-                    alert('Failed to start game against Stockfish.');
+                    console.error('Failed to start game. Response:', data);
+                    alert(`Failed to start game against Stockfish. Error: ${data.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Error starting Lichess game:', error);
-                alert('Error connecting to Lichess. Please check your API token and network.');
+                alert(`Error connecting to Lichess: ${error.message}. Please check your API token, network, and ensure the game is hosted over HTTPS.`);
             }
         }
 
@@ -324,7 +326,9 @@
                     }
                 });
                 if (!response.ok) {
-                    alert('Invalid move! Try again.');
+                    const errorData = await response.json();
+                    console.error('Invalid move. Response:', errorData);
+                    alert(`Invalid move! Error: ${errorData.error || 'Unknown error'}. Try again.`);
                     // Revert the move locally
                     const lastMove = moveHistory.pop();
                     if (lastMove) {
@@ -335,7 +339,7 @@
                 }
             } catch (error) {
                 console.error('Error sending move to Lichess:', error);
-                alert('Error sending move to Lichess. Please try again.');
+                alert(`Error sending move to Lichess: ${error.message}. Please try again.`);
             }
         }
 
