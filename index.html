@@ -3,649 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Russian Roulette Chess</title>
-</head>
-<body>
-    <div class="container">
-        <h1>Russian Roulette Chess</h1>
-        <div id="game-status">
-            <p>Round: <span id="round">1</span></p>
-            <p>Status: <span id="status">White's Turn</span></p>
-        </div>
-        <div id="abilities" style="display: none;">
-            <h2>Special Abilities</h2>
-            <select id="ability-select">
-                <option value="">Select an Ability</option>
-            </select>
-            <button id="use-ability" disabled>Use Ability</button>
-        </div>
-        <div id="chessboard"></div>
-        <button id="start-game">Start Game</button>
-        <button id="next-round" style="display: none;">Next Round</button>
-    </div>
-
+    <title>Voice AI with DeepSeek R1 and AssemblyAI</title>
     <style>
         body {
-            background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center center fixed;
-            background-size: cover;
-            font-family: Arial, sans-serif;
-            color: white;
-            text-shadow: 1px 1px 2px black;
-        }
-
-        .container {
-            text-align: center;
-            padding: 20px;
-        }
-
-        #chessboard {
-            width: 400px;
-            height: 400px;
-            display: grid;
-            grid-template-columns: repeat(8, 50px);
-            grid-template-rows: repeat(8, 50px);
-            margin: 0 auto;
-            border: 2px solid black;
-            background-color: #fff;
-        }
-
-        .square {
-            width: 50px;
-            height: 50px;
+            font-family: 'Poppins', sans-serif;
+            background-color: #2a2a2a;
+            color: #fff;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
+            height: 100vh;
+            margin: 0;
         }
-
-        .square.light {
-            background-color: #fff;
-        }
-
-        .square.dark {
-            background-color: #d18b47;
-        }
-
-        .square.selected {
-            background-color: yellow;
-        }
-
-        .piece {
-            width: 40px;
-            height: 40px;
-            background-size: cover;
-            font-size: 24px;
-        }
-
-        #abilities {
-            margin: 20px 0;
-        }
-
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #8e2de2;
+            border: none;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #7a25c9;
+        }
+        #status, #transcription, #response {
             margin: 10px;
             font-size: 16px;
-            cursor: pointer;
-        }
-
-        #game-status {
-            margin: 20px 0;
-        }
-
-        .monster {
-            font-size: 40px;
-            color: red;
         }
     </style>
+</head>
+<body>
+    <button id="startBtn">Start Listening</button>
+    <button id="stopBtn" disabled>Stop Listening</button>
+    <div id="status">Status: Idle</div>
+    <div id="transcription">Transcription: </div>
+    <div id="response">Response: </div>
 
     <script>
-        // Game state
-        let board = [];
-        let currentRound = 1;
-        let selectedPiece = null;
-        let playerAbilities = [];
-        let monsterHP = 5; // For Round 3
-        let gameOver = false;
-        let gameId = null; // Lichess game ID
-        let moveHistory = []; // To track moves for abilities like Takeback
-        let shieldActive = false; // For Shield ability
-        let shieldTurns = 0;
+        // Replace these with your API keys
+        const ASSEMBLYAI_API_KEY = 'dd73c7d0f80e4013940e0a494ff3de43';
+        const DEEPSEEK_API_KEY = 'sk-32a8b88f56f84ca8b547012c8455f183';
 
-        // Lichess API token (replace with your new token)
-        const LICHESS_API_TOKEN = 'lip_qSR2ifPb4TubNLb0FAYy';
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const status = document.getElementById('status');
+        const transcriptionDiv = document.getElementById('transcription');
+        const responseDiv = document.getElementById('response');
 
-        // Piece representation (using Unicode symbols)
-        const pieces = {
-            'wp': '♙', 'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔',
-            'bp': '♟', 'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚',
-            'monster': '♜(♚)🕷️(♚)♜'
-        };
+        let socket;
+        let mediaRecorder;
+        let audioStream;
 
-        // Initialize the board
-        function initializeBoard() {
-            board = Array(8).fill().map(() => Array(8).fill(null));
-            // Set up White pieces
-            board[0] = ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr'];
-            board[1] = Array(8).fill('wp');
-            // Set up Black pieces (for Rounds 1 and 2)
-            if (currentRound < 3) {
-                board[6] = Array(8).fill('bp');
-                board[7] = ['br', 'bn', 'bb', 'bq', 'bk', 'bb', 'bn', 'br'];
-            }
-            moveHistory = [];
-            shieldActive = false;
-            shieldTurns = 0;
-            renderBoard();
-        }
-
-        // Render the chessboard
-        function renderBoard() {
-            const chessboard = document.getElementById('chessboard');
-            chessboard.innerHTML = '';
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    const square = document.createElement('div');
-                    square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
-                    square.dataset.row = row;
-                    square.dataset.col = col;
-                    if (board[row][col]) {
-                        const piece = document.createElement('span');
-                        piece.className = 'piece' + (board[row][col] === 'monster' ? ' monster' : '');
-                        piece.innerText = pieces[board[row][col]];
-                        square.appendChild(piece);
-                    }
-                    square.addEventListener('click', () => handleSquareClick(row, col));
-                    chessboard.appendChild(square);
-                }
-            }
-        }
-
-        // Convert board position to algebraic notation (e.g., e2 to e4)
-        function toAlgebraicNotation(fromRow, fromCol, toRow, toCol) {
-            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-            const from = `${files[fromCol]}${8 - fromRow}`;
-            const to = `${files[toCol]}${8 - toRow}`;
-            return `${from}${to}`;
-        }
-
-        // Convert algebraic notation to board coordinates
-        function fromAlgebraicNotation(move) {
-            const fromCol = move.charCodeAt(0) - 'a'.charCodeAt(0);
-            const fromRow = 8 - parseInt(move[1]);
-            const toCol = move.charCodeAt(2) - 'a'.charCodeAt(0);
-            const toRow = 8 - parseInt(move[3]);
-            return { fromRow, fromCol, toRow, toCol };
-        }
-
-        // Handle square clicks
-        function handleSquareClick(row, col) {
-            if (gameOver) return;
-
-            const piece = board[row][col];
-            if (selectedPiece) {
-                // Attempt to move the selected piece
-                const move = toAlgebraicNotation(selectedPiece.row, selectedPiece.col, row, col);
-                if (movePiece(selectedPiece.row, selectedPiece.col, row, col)) {
-                    moveHistory.push({ fromRow: selectedPiece.row, fromCol: selectedPiece.col, toRow: row, toCol: col, captured: board[row][col] });
-                    if (currentRound < 3 && gameId) {
-                        // Send move to Lichess
-                        sendMoveToLichess(gameId, move);
-                    } else {
-                        // Monster move for Round 3
-                        setTimeout(monsterMove, 500);
-                    }
-                }
-                selectedPiece = null;
-                renderBoard();
-            } else if (piece && piece.startsWith('w')) {
-                // Select a white piece
-                selectedPiece = { row, col };
-                renderBoard();
-                document.querySelectorAll('.square').forEach(square => {
-                    if (parseInt(square.dataset.row) === row && parseInt(square.dataset.col) === col) {
-                        square.classList.add('selected');
-                    }
-                });
-            }
-        }
-
-        // Simplified move logic (for local board updates)
-        function movePiece(fromRow, fromCol, toRow, toCol) {
-            const piece = board[fromRow][fromCol];
-            if (!piece) return false;
-
-            // Basic move validation (not full chess rules, Lichess will validate for Rounds 1 and 2)
-            const target = board[toRow][toCol];
-            if (target && target.startsWith(piece[0])) return false; // Can't capture own piece
-
-            // Move the piece
-            board[toRow][toCol] = piece;
-            board[fromRow][fromCol] = null;
-
-            // Update shield status
-            if (shieldActive) {
-                shieldTurns--;
-                if (shieldTurns <= 0) {
-                    shieldActive = false;
-                }
-            }
-
-            // Check for win/loss
-            if (currentRound < 3) {
-                if (!board.flat().some(p => p === 'bk')) {
-                    alert('You win this round!');
-                    document.getElementById('next-round').style.display = 'block';
-                    gameId = null; // Reset game ID
-                }
-                if (!board.flat().some(p => p === 'wk') && !shieldActive) {
-                    alert('You lose! Game Over.');
-                    gameOver = true;
-                }
-            } else {
-                // In Round 3, check monster HP
-                if (target && target === 'monster') {
-                    monsterHP--;
-                    document.getElementById('status').innerText = `Monster HP: ${monsterHP}`;
-                    if (monsterHP <= 0) {
-                        alert('You win the game!');
-                        gameOver = true;
-                    }
-                }
-                if (!board.flat().some(p => p === 'wk') && !shieldActive) {
-                    alert('You lose! Game Over.');
-                    gameOver = true;
-                }
-            }
-            return true;
-        }
-
-        // Start a game against Stockfish via Lichess API
-        async function startLichessGame() {
+        // Start recording and connect to AssemblyAI WebSocket
+        async function startListening() {
             try {
-                const response = await fetch('https://lichess.org/api/challenge/ai', {
+                status.textContent = 'Status: Connecting...';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+
+                // Get microphone access
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(audioStream, { mimeType: 'audio/webm' });
+
+                // Connect to AssemblyAI WebSocket
+                socket = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000`, ['Authorization', ASSEMBLYAI_API_KEY]);
+
+                socket.onopen = () => {
+                    status.textContent = 'Status: Listening...';
+                    mediaRecorder.start(250); // Send audio chunks every 250ms
+                };
+
+                socket.onmessage = async (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.message_type === 'FinalTranscript') {
+                        const transcript = data.text;
+                        transcriptionDiv.textContent = `Transcription: ${transcript}`;
+                        if (transcript) {
+                            await processWithDeepSeek(transcript);
+                        }
+                    }
+                };
+
+                socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    status.textContent = 'Status: Error occurred';
+                };
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const base64Audio = reader.result.split(',')[1];
+                            socket.send(JSON.stringify({ audio_data: base64Audio }));
+                        };
+                        reader.readAsDataURL(event.data);
+                    }
+                };
+
+            } catch (error) {
+                console.error('Start error:', error);
+                status.textContent = 'Status: Failed to start';
+                resetUI();
+            }
+        }
+
+        // Stop recording and clean up
+        function stopListening() {
+            status.textContent = 'Status: Stopping...';
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+            }
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+            resetUI();
+        }
+
+        // Process transcript with DeepSeek R1
+        async function processWithDeepSeek(transcript) {
+            try {
+                status.textContent = 'Status: Processing with DeepSeek R1...';
+                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${LICHESS_API_TOKEN}`,
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        level: 4, // Stockfish level (1-8, 4 is moderate)
-                        color: 'black' // Player is White, AI is Black
+                        model: 'deepseek-reasoner', // DeepSeek R1
+                        messages: [{ role: 'user', content: transcript }],
+                        max_tokens: 150
                     })
                 });
+
                 const data = await response.json();
-                if (response.ok && data.gameId) {
-                    gameId = data.gameId;
-                    console.log('Game started successfully. Game ID:', gameId);
-                    streamLichessGame(gameId);
-                } else {
-                    console.error('Failed to start game. Response:', data);
-                    alert(`Failed to start game against Stockfish. Error: ${data.error || 'Unknown error'}`);
-                }
+                const reply = data.choices[0].message.content;
+                responseDiv.textContent = `Response: ${reply}`;
+                speakResponse(reply);
             } catch (error) {
-                console.error('Error starting Lichess game:', error);
-                alert(`Error connecting to Lichess: ${error.message}. Please check your API token, network, and ensure the game is hosted over HTTPS.`);
+                console.error('DeepSeek error:', error);
+                responseDiv.textContent = 'Response: Error processing with DeepSeek';
+                status.textContent = 'Status: Idle';
             }
         }
 
-        // Stream game events from Lichess
-        function streamLichessGame(gameId) {
-            const eventSource = new EventSource(`https://lichess.org/api/board/game/${gameId}/stream`);
-            eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'gameState') {
-                    // Update board based on Lichess game state
-                    updateBoardFromLichess(data);
-                    if (data.status === 'mate' || data.status === 'resign') {
-                        if (data.winner === 'white') {
-                            alert('You win this round!');
-                            document.getElementById('next-round').style.display = 'block';
-                        } else {
-                            alert('You lose! Game Over.');
-                            gameOver = true;
-                        }
-                        eventSource.close();
-                    }
-                }
+        // Convert response to speech using Web Speech API
+        function speakResponse(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.onend = () => {
+                status.textContent = 'Status: Idle';
             };
-            eventSource.onerror = () => {
-                console.error('Error streaming Lichess game.');
-                alert('Error streaming game from Lichess. Please try again.');
-                eventSource.close();
-            };
+            window.speechSynthesis.speak(utterance);
+            status.textContent = 'Status: Speaking...';
         }
 
-        // Send player's move to Lichess
-        async function sendMoveToLichess(gameId, move) {
-            try {
-                const response = await fetch(`https://lichess.org/api/board/game/${gameId}/move/${move}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${LICHESS_API_TOKEN}`
-                    }
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Invalid move. Response:', errorData);
-                    alert(`Invalid move! Error: ${errorData.error || 'Unknown error'}. Try again.`);
-                    // Revert the move locally
-                    const lastMove = moveHistory.pop();
-                    if (lastMove) {
-                        board[lastMove.fromRow][lastMove.fromCol] = board[lastMove.toRow][lastMove.toCol];
-                        board[lastMove.toRow][lastMove.toCol] = lastMove.captured;
-                        renderBoard();
-                    }
-                }
-            } catch (error) {
-                console.error('Error sending move to Lichess:', error);
-                alert(`Error sending move to Lichess: ${error.message}. Please try again.`);
-            }
+        // Reset UI state
+        function resetUI() {
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            status.textContent = 'Status: Idle';
         }
 
-        // Update local board from Lichess game state
-        function updateBoardFromLichess(gameState) {
-            const moves = gameState.moves.split(' ');
-            // Reset board
-            initializeBoard();
-            // Replay moves to update the board
-            for (let move of moves) {
-                const { fromRow, fromCol, toRow, toCol } = fromAlgebraicNotation(move);
-                movePiece(fromRow, fromCol, toRow, toCol);
-                moveHistory.push({ fromRow, fromCol, toRow, toCol, captured: board[toRow][toCol] });
-            }
-            renderBoard();
-        }
-
-        // Monster move for Round 3
-        function monsterMove() {
-            const moves = [
-                { row: 1, col: 2 }, { row: 1, col: -2 }, { row: -1, col: 2 }, { row: -1, col: -2 },
-                { row: 2, col: 1 }, { row: 2, col: -1 }, { row: -2, col: 1 }, { row: -2, col: -1 },
-                { row: 0, col: 1 }, { row: 0, col: -1 }, { row: 1, col: 0 }, { row: -1, col: 0 }
-            ];
-            let monsterPos = null;
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    if (board[row][col] === 'monster') {
-                        monsterPos = { row, col };
-                        break;
-                    }
-                }
-                if (monsterPos) break;
-            }
-            if (!monsterPos) return;
-
-            const move = moves[Math.floor(Math.random() * moves.length)];
-            const newRow = monsterPos.row + move.row;
-            const newCol = monsterPos.col + move.col;
-            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                if (board[newRow][newCol] && board[newRow][newCol].startsWith('w')) {
-                    // Monster captures a white piece
-                    if (board[newRow][newCol] === 'wk' && shieldActive) {
-                        return; // King is protected by shield
-                    }
-                    board[newRow][newCol] = 'monster';
-                    board[monsterPos.row][monsterPos.col] = null;
-                    if (!board.flat().some(p => p === 'wk') && !shieldActive) {
-                        alert('You lose! Game Over.');
-                        gameOver = true;
-                    }
-                } else if (!board[newRow][newCol]) {
-                    // Move to empty square
-                    board[newRow][newCol] = 'monster';
-                    board[monsterPos.row][monsterPos.col] = null;
-                }
-            }
-            renderBoard();
-        }
-
-        // Special abilities logic
-        const abilities = [
-            'Takeback', 'Superior Queen', 'Superior Knight', 'Predictor', 'Superior Bishop',
-            'Shield', 'Superior Rook', 'Bomb', 'Ultimate Pawn'
-        ];
-
-        function setupAbilities() {
-            const abilitySelect = document.getElementById('ability-select');
-            abilitySelect.innerHTML = '<option value="">Select an Ability</option>';
-            (currentRound === 2 ? playerAbilities : abilities).forEach(ability => {
-                const option = document.createElement('option');
-                option.value = ability;
-                option.innerText = ability;
-                abilitySelect.appendChild(option);
-            });
-            document.getElementById('use-ability').onclick = useAbility;
-            document.getElementById('use-ability').disabled = false;
-        }
-
-        function useAbility() {
-            const ability = document.getElementById('ability-select').value;
-            if (!ability) return;
-
-            if (ability === 'Takeback') {
-                const lastMove = moveHistory.pop();
-                if (lastMove) {
-                    board[lastMove.fromRow][lastMove.fromCol] = board[lastMove.toRow][lastMove.toCol];
-                    board[lastMove.toRow][lastMove.toCol] = lastMove.captured;
-                    renderBoard();
-                } else {
-                    alert('No moves to take back!');
-                    return;
-                }
-            } else if (ability === 'Superior Queen') {
-                const queenPos = board.flat().indexOf('wq');
-                if (queenPos === -1) {
-                    alert('No queen on the board!');
-                    return;
-                }
-                const row = Math.floor(queenPos / 8);
-                const col = queenPos % 8;
-                const move1 = prompt('Enter first move for queen (e.g., e4):');
-                if (move1) {
-                    const { toRow: toRow1, toCol: toCol1 } = fromAlgebraicNotation(`${toAlgebraicNotation(row, col, row, col).slice(0, 2)}${move1}`);
-                    if (movePiece(row, col, toRow1, toCol1)) {
-                        const move2 = prompt('Enter second move for queen (e.g., e5):');
-                        if (move2) {
-                            const { toRow: toRow2, toCol: toCol2 } = fromAlgebraicNotation(`${toAlgebraicNotation(toRow1, toCol1, toRow1, toCol1).slice(0, 2)}${move2}`);
-                            movePiece(toRow1, toCol1, toRow2, toCol2);
-                        }
-                    }
-                }
-            } else if (ability === 'Superior Knight') {
-                const knightPos = board.flat().indexOf('wn');
-                if (knightPos === -1) {
-                    alert('No knight on the board!');
-                    return;
-                }
-                const row = Math.floor(knightPos / 8);
-                const col = knightPos % 8;
-                const target = prompt('Enter target square for knight (e.g., e4):');
-                if (target) {
-                    const { toRow, toCol } = fromAlgebraicNotation(`${toAlgebraicNotation(row, col, row, col).slice(0, 2)}${target}`);
-                    movePiece(row, col, toRow, toCol);
-                }
-            } else if (ability === 'Predictor') {
-                if (currentRound < 3) {
-                    alert('Predictor not implemented for Lichess API (requires move prediction).');
-                } else {
-                    const nextMove = monsterMovePredictor();
-                    alert(`Monster's next move: ${nextMove}`);
-                }
-            } else if (ability === 'Superior Bishop') {
-                const bishopPos = board.flat().indexOf('wb');
-                if (bishopPos === -1) {
-                    alert('No bishop on the board!');
-                    return;
-                }
-                const row = Math.floor(bishopPos / 8);
-                const col = bishopPos % 8;
-                const target = prompt('Enter target square for bishop (e.g., e4):');
-                if (target) {
-                    const { toRow, toCol } = fromAlgebraicNotation(`${toAlgebraicNotation(row, col, row, col).slice(0, 2)}${target}`);
-                    // Simplified: Move bishop and capture any piece in the path
-                    movePiece(row, col, toRow, toCol);
-                }
-            } else if (ability === 'Shield') {
-                shieldActive = true;
-                shieldTurns = 5;
-                alert('Shield activated for 5 moves!');
-            } else if (ability === 'Superior Rook') {
-                const rookPos = board.flat().indexOf('wr');
-                if (rookPos === -1) {
-                    alert('No rook on the board!');
-                    return;
-                }
-                const row = Math.floor(rookPos / 8);
-                const col = rookPos % 8;
-                const direction = prompt('Enter direction for rook (up, down, left, right):');
-                if (direction) {
-                    let r = row, c = col;
-                    if (direction === 'up') {
-                        while (r > 0) {
-                            r--;
-                            if (board[r][c]) {
-                                board[r][c] = null;
-                                break;
-                            }
-                        }
-                    } else if (direction === 'down') {
-                        while (r < 7) {
-                            r++;
-                            if (board[r][c]) {
-                                board[r][c] = null;
-                                break;
-                            }
-                        }
-                    } else if (direction === 'left') {
-                        while (c > 0) {
-                            c--;
-                            if (board[r][c]) {
-                                board[r][c] = null;
-                                break;
-                            }
-                        }
-                    } else if (direction === 'right') {
-                        while (c < 7) {
-                            c++;
-                            if (board[r][c]) {
-                                board[r][c] = null;
-                                break;
-                            }
-                        }
-                    }
-                    board[row][col] = null;
-                    board[r][c] = 'wr';
-                    renderBoard();
-                }
-            } else if (ability === 'Bomb') {
-                const square = prompt('Enter square to bomb (e.g., e4):');
-                if (square) {
-                    const col = square.charCodeAt(0) - 'a'.charCodeAt(0);
-                    const row = 8 - parseInt(square[1]);
-                    if (row >= 0 && row < 8 && col >= 0 && col < 8) {
-                        if (currentRound === 3 && board[row][col] === 'monster') {
-                            monsterHP--;
-                            document.getElementById('status').innerText = `Monster HP: ${monsterHP}`;
-                            if (monsterHP <= 0) {
-                                alert('You win the game!');
-                                gameOver = true;
-                            }
-                        }
-                        board[row][col] = null; // Destroy the square
-                        renderBoard();
-                    }
-                }
-            } else if (ability === 'Ultimate Pawn') {
-                const pawnSquare = prompt('Enter pawn square to promote (e.g., e2):');
-                if (pawnSquare) {
-                    const col = pawnSquare.charCodeAt(0) - 'a'.charCodeAt(0);
-                    const row = 8 - parseInt(pawnSquare[1]);
-                    if (board[row][col] === 'wp') {
-                        board[row][col] = 'wq'; // Promote to queen
-                        renderBoard();
-                    } else {
-                        alert('No pawn at that square!');
-                        return;
-                    }
-                }
-            }
-
-            // Remove ability after use
-            if (currentRound === 2) {
-                playerAbilities = playerAbilities.filter(a => a !== ability);
-                setupAbilities();
-            }
-            document.getElementById('ability-select').value = '';
-        }
-
-        // Predictor helper for Round 3 (simplified)
-        function monsterMovePredictor() {
-            const moves = [
-                { row: 1, col: 2 }, { row: 1, col: -2 }, { row: -1, col: 2 }, { row: -1, col: -2 },
-                { row: 2, col: 1 }, { row: 2, col: -1 }, { row: -2, col: 1 }, { row: -2, col: -1 },
-                { row: 0, col: 1 }, { row: 0, col: -1 }, { row: 1, col: 0 }, { row: -1, col: 0 }
-            ];
-            let monsterPos = null;
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    if (board[row][col] === 'monster') {
-                        monsterPos = { row, col };
-                        break;
-                    }
-                }
-                if (monsterPos) break;
-            }
-            if (!monsterPos) return 'Monster not found';
-
-            const move = moves[Math.floor(Math.random() * moves.length)];
-            const newRow = monsterPos.row + move.row;
-            const newCol = monsterPos.col + move.col;
-            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                return toAlgebraicNotation(monsterPos.row, monsterPos.col, newRow, newCol);
-            }
-            return 'No valid move';
-        }
-
-        // Start game
-        document.getElementById('start-game').onclick = () => {
-            currentRound = 1;
-            gameOver = false;
-            document.getElementById('round').innerText = currentRound;
-            document.getElementById('start-game').style.display = 'none';
-            document.getElementById('abilities').style.display = 'none';
-            initializeBoard();
-            if (currentRound < 3) {
-                startLichessGame();
-            }
-        };
-
-        // Next round
-        document.getElementById('next-round').onclick = () => {
-            currentRound++;
-            document.getElementById('round').innerText = currentRound;
-            document.getElementById('next-round').style.display = 'none';
-            if (currentRound === 2) {
-                document.getElementById('abilities').style.display = 'block';
-                playerAbilities = prompt('Choose 3 abilities (comma-separated): ' + abilities.join(', ')).split(',').map(a => a.trim());
-                setupAbilities();
-                initializeBoard();
-                startLichessGame();
-            } else if (currentRound === 3) {
-                document.getElementById('abilities').style.display = 'block';
-                setupAbilities();
-                board = Array(8).fill().map(() => Array(8).fill(null));
-                board[0] = ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr'];
-                board[1] = Array(8).fill('wp');
-                board[4][4] = 'monster'; // Place monster in the center
-                monsterHP = 5;
-                document.getElementById('status').innerText = `Monster HP: ${monsterHP}`;
-                renderBoard();
-            }
-        };
-
-        // Initialize the game
-        initializeBoard();
+        // Event listeners
+        startBtn.addEventListener('click', startListening);
+        stopBtn.addEventListener('click', stopListening);
     </script>
 </body>
 </html>
