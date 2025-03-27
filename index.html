@@ -3,195 +3,533 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice AI with DeepSeek R1 and AssemblyAI</title>
+    <title>TempoMatic 5000 - Pomodoro Timer</title>
+    <!-- Google Fonts for that authentic retro feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Bebas+Neue&family=Righteous&display=swap" rel="stylesheet">
+
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #2a2a2a;
-            color: #fff;
+        /* ---= Globals & Theme Setup =--- */
+        :root {
+            --clr-primary: #0ABAB5; /* Teal */
+            --clr-secondary: #FF6B6B; /* Salmon Pink/Red */
+            --clr-accent: #FFD166; /* Mustard Yellow */
+            --clr-bg: #F8F0E3; /* Creamy Background */
+            --clr-dark: #333;
+            --clr-light: #FFF;
+            --clr-chrome: linear-gradient(180deg, #ffffff 0%, #d8d8d8 10%, #b1b1b1 48%, #9a9a9a 50%, #b6b6b6 52%, #e2e2e2 90%, #ffffff 100%);
+            --clr-chrome-border: #888;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Bebas Neue', sans-serif; /* Bold, condensed sans-serif common in 50s ads */
+            background-color: var(--clr-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Prevent scrollbars */
+            color: var(--clr-dark);
+        }
+
+        /* ---= Noise/Distortion Overlay =--- */
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Subtle noise texture using CSS gradients */
+            background:
+                linear-gradient(rgba(255, 255, 255, 0.02) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 2px, transparent 2px),
+                linear-gradient(rgba(0, 0, 0, 0.01) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.01) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
+            opacity: 0.2;
+            pointer-events: none; /* Allows clicking through */
+            z-index: 100;
+            animation: grain 8s steps(10) infinite;
+        }
+
+        @keyframes grain {
+          0%, 100% { background-position: 0 0, 0 0, 0 0, 0 0; }
+          10% { background-position: -5% -10%, -5% -10%, 5% 5%, 5% 5%; }
+          20% { background-position: -10% -5%, -10% -5%, -10% -10%, -10% -10%; }
+          30% { background-position: -5% -15%, -5% -15%, -5% 0, -5% 0; }
+          40% { background-position: -15% -10%, -15% -10%, 0 5%, 0 5%; }
+          50% { background-position: -10% 0, -10% 0, 10% 10%, 10% 10%; }
+          60% { background-position: 0 -5%, 0 -5%, 5% -10%, 5% -10%; }
+          70% { background-position: -15% -15%, -15% -15%, -15% 15%, -15% 15%; }
+          80% { background-position: -5% -10%, -5% -10%, 0 0, 0 0; }
+          90% { background-position: -10% 0, -10% 0, 10% -5%, 10% -5%; }
+        }
+
+        /* ---= Stereo Body =--- */
+        .stereo-container {
+            width: 90vw;
+            max-width: 550px;
+            min-height: 350px;
+            background-color: var(--clr-primary);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow:
+                10px 10px 15px rgba(0, 0, 0, 0.3),
+                inset 5px 5px 10px rgba(255, 255, 255, 0.2),
+                inset -5px -5px 10px rgba(0, 0, 0, 0.2);
+            border: 4px solid var(--clr-dark);
+            position: relative;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
+            justify-content: space-between;
+            overflow: hidden; /* Keep internal elements contained */
         }
-        button {
-            padding: 12px 24px;
-            font-size: 16px;
-            background: #8e2de2;
-            border: none;
-            color: #fff;
+
+        /* ---= Branding =--- */
+        .brand {
+            font-family: 'Lobster', cursive; /* Classic script font */
+            font-size: 2.8rem;
+            color: var(--clr-light);
+            text-shadow: 2px 2px 0 var(--clr-dark), 4px 4px 0 rgba(0,0,0,0.2);
+            text-align: center;
+            margin-bottom: 15px;
+            line-height: 1;
+        }
+
+        /* ---= Main Display & Grill Area =--- */
+        .display-grill-area {
+            display: flex;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: inset 3px 3px 5px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            gap: 15px;
+            align-items: center; /* Vertically center items */
+        }
+
+        /* ---= Speaker Grill =--- */
+        .speaker-grill {
+            flex: 1;
+            height: 100px; /* Match display height roughly */
+            background:
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(0,0,0,0.3),
+                    rgba(0,0,0,0.3) 2px,
+                    transparent 2px,
+                    transparent 6px
+                ),
+                repeating-linear-gradient(
+                    -45deg,
+                    rgba(0,0,0,0.3),
+                    rgba(0,0,0,0.3) 2px,
+                    transparent 2px,
+                    transparent 6px
+                ),
+                var(--clr-dark);
             border-radius: 8px;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* ---= Timer Display =--- */
+        .timer-display-wrapper {
+            flex: 2;
+            background: var(--clr-bg);
+            border: 4px solid var(--clr-dark);
+            border-radius: 10px;
+            padding: 10px 20px;
+            box-shadow: inset 3px 3px 5px rgba(0,0,0,0.4);
+            text-align: center;
+            position: relative; /* For status light */
+        }
+
+        #time-left {
+            font-family: 'Righteous', cursive; /* Digital-like but retro */
+            font-size: 4rem;
+            color: var(--clr-secondary);
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5), -1px -1px 0px rgba(0,0,0,0.2);
+            line-height: 1;
+        }
+
+        #timer-status {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.2rem;
+            color: var(--clr-dark);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Status Indicator Light (like on old amps) */
+        .status-light {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #555; /* Off state */
+            border: 1px solid var(--clr-dark);
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
+            transition: background-color 0.3s ease;
+        }
+        .status-light.active {
+            background-color: #00ff00; /* Green light for running */
+            box-shadow: 0 0 5px #00ff00, inset 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .status-light.break {
+            background-color: var(--clr-accent); /* Yellow light for break */
+            box-shadow: 0 0 5px var(--clr-accent), inset 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+
+        /* ---= Controls Area =--- */
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid rgba(0,0,0,0.2);
+            box-shadow: inset 3px 3px 5px rgba(0,0,0,0.3);
+        }
+
+        .control-button {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.3rem;
+            padding: 12px 20px;
+            border-radius: 50px; /* Rounded pill shape */
+            border: 2px solid var(--clr-chrome-border);
+            background: var(--clr-chrome);
+            color: var(--clr-dark);
             cursor: pointer;
-            margin: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255,255,255,0.7);
+            transition: all 0.1s ease-out;
+            min-width: 100px;
+            text-align: center;
         }
-        button:hover {
-            background: #7a25c9;
+
+        .control-button:hover {
+            filter: brightness(1.1);
+            box-shadow: 4px 4px 7px rgba(0, 0, 0, 0.35), inset 1px 1px 1px rgba(255,255,255,0.7);
         }
-        #status, #transcription, #response {
-            margin: 10px;
-            font-size: 16px;
+
+        .control-button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4), inset 2px 2px 3px rgba(0,0,0,0.3);
+            filter: brightness(0.9);
         }
+
+        /* Specific button colors for visual cue */
+        #start-pause { background: linear-gradient(180deg, #aaffaa 0%, #90ee90 10%, #50c878 48%, #3cb371 50%, #50c878 52%, #90ee90 90%, #aaffaa 100%); } /* Greenish Chrome */
+        #reset { background: linear-gradient(180deg, #ffaaaa 0%, #ff8888 10%, #cd5c5c 48%, #bc4c4c 50%, #cd5c5c 52%, #ff8888 90%, #ffaaaa 100%); } /* Reddish Chrome */
+        #skip { background: linear-gradient(180deg, #ffffaa 0%, #ffee88 10%, #ffd700 48%, #eec700 50%, #ffd700 52%, #ffee88 90%, #ffffaa 100%); } /* Yellowish Chrome */
+
+
+        /* ---= Pomodoro Counter =--- */
+        .pomodoro-counter {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+            gap: 8px;
+        }
+
+        .pomodoro-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid rgba(0,0,0,0.4);
+            transition: background-color 0.3s ease;
+        }
+
+        .pomodoro-dot.completed {
+            background-color: var(--clr-secondary);
+            box-shadow: 0 0 3px var(--clr-secondary);
+        }
+
+        /* ---= Responsiveness (Basic) =--- */
+        @media (max-width: 500px) {
+            .brand { font-size: 2rem; }
+            #time-left { font-size: 3rem; }
+            .control-button { font-size: 1rem; padding: 10px 15px; min-width: 80px; }
+            .display-grill-area { flex-direction: column; }
+            .speaker-grill { width: 80%; height: 50px; margin: 0 auto; }
+            .timer-display-wrapper { width: 100%; }
+            .controls { flex-wrap: wrap; gap: 10px; }
+        }
+
     </style>
 </head>
 <body>
-    <button id="startBtn">Start Listening</button>
-    <button id="stopBtn" disabled>Stop Listening</button>
-    <div id="status">Status: Idle</div>
-    <div id="transcription">Transcription: </div>
-    <div id="response">Response: </div>
+
+    <div class="stereo-container">
+        <h1 class="brand">TempoMatic 5000</h1>
+
+        <div class="display-grill-area">
+            <div class="speaker-grill"></div>
+            <div class="timer-display-wrapper">
+                <div id="status-light" class="status-light"></div>
+                <div id="time-left">25:00</div>
+                <div id="timer-status">Work Session</div>
+            </div>
+            <div class="speaker-grill"></div>
+        </div>
+
+        <div class="controls">
+            <button id="start-pause" class="control-button">Start</button>
+            <button id="reset" class="control-button">Reset</button>
+            <button id="skip" class="control-button">Skip</button>
+        </div>
+
+        <div class="pomodoro-counter">
+            <div class="pomodoro-dot" id="dot-0"></div>
+            <div class="pomodoro-dot" id="dot-1"></div>
+            <div class="pomodoro-dot" id="dot-2"></div>
+            <div class="pomodoro-dot" id="dot-3"></div>
+        </div>
+    </div>
 
     <script>
-        // Replace these with your API keys
-        const ASSEMBLYAI_API_KEY = 'dd73c7d0f80e4013940e0a494ff3de43';
-        const DEEPSEEK_API_KEY = 'sk-32a8b88f56f84ca8b547012c8455f183';
+        // ---= DOM Elements =---
+        const timeLeftDisplay = document.getElementById('time-left');
+        const timerStatusDisplay = document.getElementById('timer-status');
+        const startPauseButton = document.getElementById('start-pause');
+        const resetButton = document.getElementById('reset');
+        const skipButton = document.getElementById('skip');
+        const statusLight = document.getElementById('status-light');
+        const pomodoroDots = document.querySelectorAll('.pomodoro-dot');
 
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const status = document.getElementById('status');
-        const transcriptionDiv = document.getElementById('transcription');
-        const responseDiv = document.getElementById('response');
+        // ---= Timer Settings (in seconds) =---
+        const workTime = 25 * 60; // 25 minutes
+        const shortBreakTime = 5 * 60; // 5 minutes
+        const longBreakTime = 15 * 60; // 15 minutes
 
-        let socket;
-        let mediaRecorder;
-        let audioStream;
+        // ---= Timer State =---
+        let timerInterval = null;
+        let remainingTime = workTime;
+        let isPaused = true;
+        let currentMode = 'work'; // 'work', 'shortBreak', 'longBreak'
+        let workSessionsCompleted = 0;
 
-        // Fetch temporary auth token from AssemblyAI
-        async function getAuthToken() {
-            const response = await fetch('https://api.assemblyai.com/v2/realtime/token', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${ASSEMBLYAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ expires_in: 3600 }) // Token valid for 1 hour
+        // ---= Audio Feedback (Optional - Simple Beep) =---
+        // Browsers might block autoplay, keeping it simple
+        // let beepSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."); // Replace with actual short Base64 beep if desired
+        function playBeep() {
+            // Simple visual flash instead of audio for broader compatibility
+            const container = document.querySelector('.stereo-container');
+            container.style.transition = 'box-shadow 0.1s ease-out';
+            const originalShadow = container.style.boxShadow;
+            container.style.boxShadow = `0 0 25px 5px ${currentMode === 'work' ? 'var(--clr-accent)' : 'var(--clr-secondary)'}, ${originalShadow}`;
+            setTimeout(() => {
+                container.style.boxShadow = originalShadow;
+            }, 200);
+             // Add a simple alert as fallback notification
+            alert(`${timerStatusDisplay.textContent} Finished!`);
+        }
+
+        // ---= Update Display Functions =---
+        function updateDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            timeLeftDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            // Update Status Light
+            statusLight.classList.remove('active', 'break');
+            if (!isPaused) {
+                if (currentMode === 'work') {
+                    statusLight.classList.add('active');
+                } else {
+                    statusLight.classList.add('break');
+                }
+            }
+        }
+
+        function updateStatusText() {
+            switch (currentMode) {
+                case 'work':
+                    timerStatusDisplay.textContent = `Work Session #${workSessionsCompleted + 1}`;
+                    break;
+                case 'shortBreak':
+                    timerStatusDisplay.textContent = 'Short Break';
+                    break;
+                case 'longBreak':
+                    timerStatusDisplay.textContent = 'Long Break';
+                    break;
+            }
+        }
+
+        function updatePomodoroDots() {
+            pomodoroDots.forEach((dot, index) => {
+                if (index < workSessionsCompleted) {
+                    dot.classList.add('completed');
+                } else {
+                    dot.classList.remove('completed');
+                }
             });
-            const data = await response.json();
-            return data.token;
         }
 
-        // Start recording and connect to AssemblyAI WebSocket
-        async function startListening() {
-            try {
-                status.textContent = 'Status: Connecting...';
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
+        // ---= Timer Control Functions =---
+        function startTimer() {
+            isPaused = false;
+            startPauseButton.textContent = 'Pause';
+            updateDisplay(); // Update light immediately
 
-                // Get microphone access
-                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(audioStream, { mimeType: 'audio/webm' });
+            timerInterval = setInterval(() => {
+                remainingTime--;
+                updateDisplay();
 
-                // Get temporary token and connect to WebSocket
-                const token = await getAuthToken();
-                socket = new WebSocket(`wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${token}`);
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    playBeep();
+                    nextMode();
+                }
+            }, 1000);
+        }
 
-                socket.onopen = () => {
-                    status.textContent = 'Status: Listening...';
-                    mediaRecorder.start(250); // Send audio chunks every 250ms
-                };
+        function pauseTimer() {
+            isPaused = true;
+            clearInterval(timerInterval);
+            startPauseButton.textContent = 'Start';
+            updateDisplay(); // Update light immediately
+        }
 
-                socket.onmessage = async (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.message_type === 'FinalTranscript' && data.text) {
-                        const transcript = data.text;
-                        transcriptionDiv.textContent = `Transcription: ${transcript}`;
-                        await processWithDeepSeek(transcript);
-                    }
-                };
+        function resetTimer(mode = currentMode) {
+            pauseTimer(); // Stop any running timer
+            currentMode = mode; // Keep current mode or set new if specified
 
-                socket.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                    status.textContent = 'Status: WebSocket Error';
-                };
-
-                socket.onclose = () => {
-                    status.textContent = 'Status: WebSocket Closed';
-                };
-
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                            const base64Audio = reader.result.split(',')[1];
-                            socket.send(JSON.stringify({ audio_data: base64Audio }));
-                        };
-                        reader.readAsDataURL(event.data);
-                    }
-                };
-
-            } catch (error) {
-                console.error('Start error:', error);
-                status.textContent = 'Status: Failed to start - ' + error.message;
-                resetUI();
+            switch (currentMode) {
+                case 'work':
+                    remainingTime = workTime;
+                    break;
+                case 'shortBreak':
+                    remainingTime = shortBreakTime;
+                    break;
+                case 'longBreak':
+                    remainingTime = longBreakTime;
+                    break;
             }
+
+            updateDisplay();
+            updateStatusText();
+            // Don't reset workSessionsCompleted on simple reset, only when skipping or finishing a cycle.
         }
 
-        // Stop recording and clean up
-        function stopListening() {
-            status.textContent = 'Status: Stopping...';
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
+        function nextMode() {
+            pauseTimer(); // Ensure timer is stopped
+
+            if (currentMode === 'work') {
+                workSessionsCompleted++;
+                updatePomodoroDots();
+                if (workSessionsCompleted % 4 === 0) {
+                    currentMode = 'longBreak';
+                    remainingTime = longBreakTime;
+                } else {
+                    currentMode = 'shortBreak';
+                    remainingTime = shortBreakTime;
+                }
+            } else { // If currently on a break
+                currentMode = 'work';
+                remainingTime = workTime;
+                // Reset dots if starting a new cycle after long break
+                if (workSessionsCompleted % 4 === 0 && currentMode === 'work' && workSessionsCompleted > 0) {
+                   // Handled slightly differently now, reset happens before next work starts
+                   // console.log("Starting new cycle after long break");
+                   // Handled by skip function or manual reset implicitly
+                }
             }
-            if (audioStream) {
-                audioStream.getTracks().forEach(track => track.stop());
+
+             // If we completed a full cycle (4 work + 1 long break), reset counter for the *next* cycle
+            if (currentMode === 'work' && workSessionsCompleted > 0 && workSessionsCompleted % 4 === 0) {
+                 // Check if the *previous* mode was longBreak before resetting visually
+                 // This logic is tricky. Let's simplify: dots reset when long break *ends*.
+                 if (timerStatusDisplay.textContent === 'Long Break') { // Check previous state text before update
+                     workSessionsCompleted = 0; // Reset for the NEW cycle
+                     updatePomodoroDots(); // Clear dots
+                 }
             }
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close();
+
+
+            updateDisplay();
+            updateStatusText();
+            startTimer(); // Automatically start the next timer
+        }
+
+         function skipMode() {
+            pauseTimer(); // Ensure timer is stopped
+
+            // Determine next logical state
+            let nextState = 'work'; // Default assumption
+            if (currentMode === 'work') {
+                // Don't increment work session here, just skip to appropriate break
+                if ((workSessionsCompleted + 1) % 4 === 0) { // Check if NEXT session would trigger long break
+                    nextState = 'longBreak';
+                } else {
+                    nextState = 'shortBreak';
+                }
+                 workSessionsCompleted++; // Increment *after* checking, as we skipped the work
+                 updatePomodoroDots();
+            } else { // If currently on a break, next is always work
+                nextState = 'work';
+                 // If skipping the long break, visually reset the dots for the new cycle
+                if (currentMode === 'longBreak') {
+                    workSessionsCompleted = 0;
+                    updatePomodoroDots(); // Clear dots as we start the fresh cycle
+                }
             }
-            resetUI();
+
+            currentMode = nextState;
+             resetTimer(currentMode); // Resets time to the new mode's default
+             updateDisplay();
+             updateStatusText();
+             startTimer(); // Automatically start the skipped-to timer
         }
 
-        // Process transcript with DeepSeek R1
-        async function processWithDeepSeek(transcript) {
-            try {
-                status.textContent = 'Status: Processing with DeepSeek R1...';
-                const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: 'deepseek-reasoner', // DeepSeek R1
-                        messages: [{ role: 'user', content: transcript }],
-                        max_tokens: 150
-                    })
-                });
 
-                if (!response.ok) throw new Error('DeepSeek API request failed');
-                const data = await response.json();
-                const reply = data.choices[0].message.content;
-                responseDiv.textContent = `Response: ${reply}`;
-                speakResponse(reply);
-            } catch (error) {
-                console.error('DeepSeek error:', error);
-                responseDiv.textContent = 'Response: Error processing with DeepSeek';
-                status.textContent = 'Status: Idle';
+        // ---= Event Listeners =---
+        startPauseButton.addEventListener('click', () => {
+            if (isPaused) {
+                startTimer();
+            } else {
+                pauseTimer();
             }
-        }
+        });
 
-        // Convert response to speech using Web Speech API
-        function speakResponse(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.onend = () => {
-                status.textContent = 'Status: Idle';
-            };
-            window.speechSynthesis.speak(utterance);
-            status.textContent = 'Status: Speaking...';
-        }
+        resetButton.addEventListener('click', () => {
+             // Simple reset keeps current mode, resets time.
+             // Hold Shift + Click to FULLY reset cycle? Maybe too complex.
+             // Let's make reset always go back to the START of the current mode's time.
+             // And if it was running, stop it.
+             resetTimer(currentMode);
+        });
 
-        // Reset UI state
-        function resetUI() {
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            status.textContent = 'Status: Idle';
-        }
+        skipButton.addEventListener('click', () => {
+            if (confirm('Skip to the next session?')) { // Confirmation dialog
+                skipMode();
+            }
+        });
 
-        // Event listeners
-        startBtn.addEventListener('click', startListening);
-        stopBtn.addEventListener('click', stopListening);
+        // ---= Initial Setup =---
+        window.onload = () => {
+            resetTimer('work'); // Start with a work session ready
+            updatePomodoroDots(); // Ensure dots are initially clear
+        };
+
     </script>
+
 </body>
 </html>
