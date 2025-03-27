@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Radio 1955 - Supreme Listening Station</title>
+    <title>Retro Pomodoro 1955 - Focus Like It's the Fifties!</title>
     <style>
         body {
             margin: 0;
@@ -23,8 +23,8 @@
             position: relative;
         }
 
-        .radio-box {
-            width: 700px;
+        .pomodoro-box {
+            width: 600px;
             padding: 40px;
             background: #333;
             border: 8px solid #555;
@@ -54,54 +54,49 @@
 
         .title {
             text-align: center;
-            font-size: 3em;
+            font-size: 2.8em;
             text-transform: uppercase;
             letter-spacing: 8px;
             text-shadow: 4px 4px 6px #000;
             margin-bottom: 30px;
         }
 
-        .dial {
+        .timer-display {
+            text-align: center;
+            font-size: 4em;
             background: #222;
-            padding: 30px;
-            border-radius: 15px;
-            margin: 30px 0;
+            padding: 20px;
             border: 4px solid #444;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px #000;
             position: relative;
         }
 
-        .tuner {
-            height: 40px;
+        .timer-dial {
+            position: absolute;
+            width: 100%;
+            height: 10px;
             background: #111;
-            border: 2px solid #555;
-            border-radius: 5px;
-            position: relative;
-            margin-bottom: 20px;
-            overflow: hidden;
+            top: -14px;
+            left: 0;
+            border-bottom: 2px solid #555;
         }
 
-        .needle {
+        .timer-needle {
             position: absolute;
             width: 2px;
             height: 100%;
             background: #e00;
             top: 0;
-            transition: left 0.3s ease;
+            transition: left 0.5s linear;
             box-shadow: 0 0 5px #e00;
-        }
-
-        .station-info {
-            text-align: center;
-            font-size: 1.4em;
-            margin-bottom: 20px;
-            text-shadow: 1px 1px 3px #000;
         }
 
         .controls {
             display: flex;
             justify-content: space-between;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 15px;
         }
 
         button {
@@ -129,34 +124,16 @@
             border-color: #aa0000;
         }
 
-        .volume {
-            margin-top: 25px;
+        .status {
             text-align: center;
-        }
-
-        input[type="range"] {
-            width: 85%;
-            -webkit-appearance: none;
-            background: #444;
-            height: 12px;
-            border-radius: 6px;
-            outline: none;
-            margin-top: 10px;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 2px 2px 5px #000;
+            font-size: 1.3em;
+            margin-top: 20px;
+            text-shadow: 1px 1px 3px #000;
         }
 
         .speaker {
-            width: 130px;
-            height: 130px;
+            width: 120px;
+            height: 120px;
             background: repeating-linear-gradient(
                 45deg,
                 #444,
@@ -169,20 +146,10 @@
             top: 25px;
             right: 25px;
             box-shadow: inset 0 0 20px #000;
-            animation: pulse 1.5s infinite;
         }
 
-        .presets {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .preset-btn {
-            width: 50px;
-            padding: 10px;
-            font-size: 0.9em;
+        .speaker.active {
+            animation: pulse 1s infinite;
         }
 
         @keyframes noise {
@@ -202,147 +169,117 @@
 </head>
 <body>
     <div class="container">
-        <div class="radio-box">
+        <div class="pomodoro-box">
             <div class="distortion-overlay"></div>
-            <div class="speaker"></div>
-            <h1 class="title">Retro Radio 1955</h1>
-            <div class="dial">
-                <div class="tuner">
-                    <div class="needle" id="needle"></div>
+            <div class="speaker" id="speaker"></div>
+            <h1 class="title">Retro Pomodoro 1955</h1>
+            <div class="timer-display">
+                <div class="timer-dial">
+                    <div class="timer-needle" id="needle"></div>
                 </div>
-                <div class="station-info" id="stationInfo">Select a Station</div>
-                <div class="controls">
-                    <button id="prevStation" onclick="changeStation(-1)">Prev</button>
-                    <button id="playStop" onclick="togglePlay()">Play</button>
-                    <button id="nextStation" onclick="changeStation(1)">Next</button>
-                </div>
+                <span id="timer">25:00</span>
             </div>
-            <div class="volume">
-                Volume
-                <input type="range" min="0" max="100" value="50" id="volume" onchange="updateVolume()">
+            <div class="controls">
+                <button id="work" onclick="startWork()">Work</button>
+                <button id="break" onclick="startBreak()">Break</button>
+                <button id="reset" onclick="resetTimer()">Reset</button>
             </div>
-            <div class="presets" id="presets"></div>
+            <div class="status" id="status">Ready to Focus?</div>
         </div>
     </div>
 
-    <audio id="radioAudio" preload="none"></audio>
-    <audio id="staticAudio" preload="auto" loop>
+    <audio id="alarm" preload="auto">
         <source src="data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIA/+MYxDsAAABsAADwAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAABsAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
     </audio>
 
     <script>
-        const audio = document.getElementById('radioAudio');
-        const staticAudio = document.getElementById('staticAudio');
-        const stationInfo = document.getElementById('stationInfo');
-        const playStopBtn = document.getElementById('playStop');
+        const timerDisplay = document.getElementById('timer');
+        const status = document.getElementById('status');
+        const workBtn = document.getElementById('work');
+        const breakBtn = document.getElementById('break');
+        const resetBtn = document.getElementById('reset');
         const needle = document.getElementById('needle');
-        const presets = document.getElementById('presets');
-        const volumeControl = document.getElementById('volume');
+        const speaker = document.getElementById('speaker');
+        const alarm = document.getElementById('alarm');
 
-        // Real radio stations with stream URLs
-        const stations = [
-            { name: "Classic Rock 101", url: "http://stream.zeno.fm/8v6k3nq5k0zuv" },
-            { name: "Jazz FM", url: "http://stream.zeno.fm/5nq5k0zuv8v6k" },
-            { name: "Retro Hits 50s", url: "http://stream.zeno.fm/3nq5k0zuv8v6k" },
-            { name: "Blues Radio", url: "http://stream.zeno.fm/9v6k3nq5k0zuv" },
-            { name: "Oldies 105.5", url: "http://stream.zeno.fm/7nq5k0zuv8v6k" }
-        ];
+        let timeLeft = 25 * 60; // Default to 25 minutes in seconds
+        let isRunning = false;
+        let interval = null;
+        let totalTime = 25 * 60; // For needle movement
 
-        let currentStationIndex = -1;
-        let isPlaying = false;
-
-        // Populate preset buttons
-        function populatePresets() {
-            stations.forEach((station, index) => {
-                const btn = document.createElement('button');
-                btn.textContent = `${index + 1}`;
-                btn.className = 'preset-btn';
-                btn.onclick = () => selectStation(index);
-                presets.appendChild(btn);
-            });
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
 
         // Update needle position
         function updateNeedle() {
-            const tunerWidth = document.querySelector('.tuner').offsetWidth;
-            const position = currentStationIndex === -1 
-                ? 0 
-                : (currentStationIndex / (stations.length - 1)) * (tunerWidth - 2);
+            const dialWidth = document.querySelector('.timer-dial').offsetWidth;
+            const position = (1 - timeLeft / totalTime) * (dialWidth - 2);
             needle.style.left = `${position}px`;
         }
 
-        // Select a station
-        function selectStation(index) {
-            if (index === currentStationIndex && isPlaying) return;
-
-            // Play static during transition
-            if (isPlaying) {
-                staticAudio.volume = 0.3;
-                staticAudio.play();
-                audio.pause();
-                setTimeout(() => staticAudio.pause(), 300);
-            }
-
-            currentStationIndex = index;
-            audio.src = stations[index].url;
-            stationInfo.textContent = stations[index].name;
+        // Update timer display and check if done
+        function updateTimer() {
+            timerDisplay.textContent = formatTime(timeLeft);
             updateNeedle();
-            updatePresetUI();
 
-            if (isPlaying) {
-                audio.play().catch(e => console.log("Playback error:", e));
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                isRunning = false;
+                alarm.play();
+                speaker.classList.add('active');
+                workBtn.classList.remove('active');
+                breakBtn.classList.remove('active');
+                status.textContent = "Time's Up!";
+                setTimeout(() => speaker.classList.remove('active'), 2000);
+                return;
             }
+            timeLeft--;
         }
 
-        // Update preset button UI
-        function updatePresetUI() {
-            const buttons = presets.children;
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].classList.toggle('active', i === currentStationIndex);
-            }
+        // Start work session (25 minutes)
+        function startWork() {
+            if (isRunning) return;
+            timeLeft = 25 * 60;
+            totalTime = 25 * 60;
+            isRunning = true;
+            interval = setInterval(updateTimer, 1000);
+            status.textContent = "Work Session";
+            workBtn.classList.add('active');
+            breakBtn.classList.remove('active');
         }
 
-        // Toggle play/stop
-        function togglePlay() {
-            if (currentStationIndex === -1) {
-                selectStation(0); // Start with first station if none selected
-            }
-
-            if (isPlaying) {
-                audio.pause();
-                staticAudio.pause();
-                playStopBtn.textContent = 'Play';
-                playStopBtn.classList.remove('active');
-            } else {
-                audio.play().catch(e => console.log("Playback error:", e));
-                playStopBtn.textContent = 'Stop';
-                playStopBtn.classList.add('active');
-            }
-            isPlaying = !isPlaying;
+        // Start break session (5 minutes)
+        function startBreak() {
+            if (isRunning) return;
+            timeLeft = 5 * 60;
+            totalTime = 5 * 60;
+            isRunning = true;
+            interval = setInterval(updateTimer, 1000);
+            status.textContent = "Break Time";
+            breakBtn.classList.add('active');
+            workBtn.classList.remove('active');
         }
 
-        // Change station (next/prev)
-        function changeStation(direction) {
-            if (stations.length === 0) return;
-
-            let newIndex = currentStationIndex + direction;
-            if (newIndex < 0) newIndex = stations.length - 1;
-            if (newIndex >= stations.length) newIndex = 0;
-
-            selectStation(newIndex);
+        // Reset timer
+        function resetTimer() {
+            clearInterval(interval);
+            isRunning = false;
+            timeLeft = 25 * 60;
+            totalTime = 25 * 60;
+            timerDisplay.textContent = formatTime(timeLeft);
+            updateNeedle();
+            status.textContent = "Ready to Focus?";
+            workBtn.classList.remove('active');
+            breakBtn.classList.remove('active');
+            speaker.classList.remove('active');
         }
 
-        // Update volume
-        function updateVolume() {
-            const volume = volumeControl.value / 100;
-            audio.volume = volume;
-            staticAudio.volume = volume * 0.3; // Static is quieter
-        }
-
-        // Initialize
-        populatePresets();
-        audio.volume = 0.5;
-        staticAudio.volume = 0.15;
+        // Initial setup
+        timerDisplay.textContent = formatTime(timeLeft);
         updateNeedle();
     </script>
 </body>
