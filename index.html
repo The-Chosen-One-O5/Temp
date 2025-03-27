@@ -3,533 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TempoMatic 5000 - Pomodoro Timer</title>
-    <!-- Google Fonts for that authentic retro feel -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Bebas+Neue&family=Righteous&display=swap" rel="stylesheet">
-
+    <title>Retro Radio 1955 - Supreme Listening Station</title>
     <style>
-        /* ---= Globals & Theme Setup =--- */
-        :root {
-            --clr-primary: #0ABAB5; /* Teal */
-            --clr-secondary: #FF6B6B; /* Salmon Pink/Red */
-            --clr-accent: #FFD166; /* Mustard Yellow */
-            --clr-bg: #F8F0E3; /* Creamy Background */
-            --clr-dark: #333;
-            --clr-light: #FFF;
-            --clr-chrome: linear-gradient(180deg, #ffffff 0%, #d8d8d8 10%, #b1b1b1 48%, #9a9a9a 50%, #b6b6b6 52%, #e2e2e2 90%, #ffffff 100%);
-            --clr-chrome-border: #888;
-        }
-
-        * {
-            box-sizing: border-box;
+        body {
             margin: 0;
             padding: 0;
+            background: #1a1a1a;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow: hidden;
         }
 
-        html, body {
-            height: 100%;
-            font-family: 'Bebas Neue', sans-serif; /* Bold, condensed sans-serif common in 50s ads */
-            background-color: var(--clr-bg);
+        .container {
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* Prevent scrollbars */
-            color: var(--clr-dark);
+            background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
+            position: relative;
         }
 
-        /* ---= Noise/Distortion Overlay =--- */
-        body::after {
-            content: "";
+        .radio-box {
+            width: 700px;
+            padding: 40px;
+            background: #333;
+            border: 8px solid #555;
+            border-radius: 25px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.2),
+                       inset 0 0 20px rgba(0,0,0,0.9);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .distortion-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            /* Subtle noise texture using CSS gradients */
-            background:
-                linear-gradient(rgba(255, 255, 255, 0.02) 2px, transparent 2px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 2px, transparent 2px),
-                linear-gradient(rgba(0, 0, 0, 0.01) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.01) 1px, transparent 1px);
-            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
-            background-position: -2px -2px, -2px -2px, -1px -1px, -1px -1px;
-            opacity: 0.2;
-            pointer-events: none; /* Allows clicking through */
-            z-index: 100;
-            animation: grain 8s steps(10) infinite;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255,255,255,0.04),
+                rgba(255,255,255,0.04) 2px,
+                transparent 2px,
+                transparent 5px
+            );
+            pointer-events: none;
+            animation: noise 0.07s infinite;
         }
 
-        @keyframes grain {
-          0%, 100% { background-position: 0 0, 0 0, 0 0, 0 0; }
-          10% { background-position: -5% -10%, -5% -10%, 5% 5%, 5% 5%; }
-          20% { background-position: -10% -5%, -10% -5%, -10% -10%, -10% -10%; }
-          30% { background-position: -5% -15%, -5% -15%, -5% 0, -5% 0; }
-          40% { background-position: -15% -10%, -15% -10%, 0 5%, 0 5%; }
-          50% { background-position: -10% 0, -10% 0, 10% 10%, 10% 10%; }
-          60% { background-position: 0 -5%, 0 -5%, 5% -10%, 5% -10%; }
-          70% { background-position: -15% -15%, -15% -15%, -15% 15%, -15% 15%; }
-          80% { background-position: -5% -10%, -5% -10%, 0 0, 0 0; }
-          90% { background-position: -10% 0, -10% 0, 10% -5%, 10% -5%; }
-        }
-
-        /* ---= Stereo Body =--- */
-        .stereo-container {
-            width: 90vw;
-            max-width: 550px;
-            min-height: 350px;
-            background-color: var(--clr-primary);
-            border-radius: 25px;
-            padding: 25px;
-            box-shadow:
-                10px 10px 15px rgba(0, 0, 0, 0.3),
-                inset 5px 5px 10px rgba(255, 255, 255, 0.2),
-                inset -5px -5px 10px rgba(0, 0, 0, 0.2);
-            border: 4px solid var(--clr-dark);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow: hidden; /* Keep internal elements contained */
-        }
-
-        /* ---= Branding =--- */
-        .brand {
-            font-family: 'Lobster', cursive; /* Classic script font */
-            font-size: 2.8rem;
-            color: var(--clr-light);
-            text-shadow: 2px 2px 0 var(--clr-dark), 4px 4px 0 rgba(0,0,0,0.2);
+        .title {
             text-align: center;
-            margin-bottom: 15px;
-            line-height: 1;
-        }
-
-        /* ---= Main Display & Grill Area =--- */
-        .display-grill-area {
-            display: flex;
-            background: rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            border-radius: 15px;
-            border: 2px solid rgba(0,0,0,0.2);
-            box-shadow: inset 3px 3px 5px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-            gap: 15px;
-            align-items: center; /* Vertically center items */
-        }
-
-        /* ---= Speaker Grill =--- */
-        .speaker-grill {
-            flex: 1;
-            height: 100px; /* Match display height roughly */
-            background:
-                repeating-linear-gradient(
-                    45deg,
-                    rgba(0,0,0,0.3),
-                    rgba(0,0,0,0.3) 2px,
-                    transparent 2px,
-                    transparent 6px
-                ),
-                repeating-linear-gradient(
-                    -45deg,
-                    rgba(0,0,0,0.3),
-                    rgba(0,0,0,0.3) 2px,
-                    transparent 2px,
-                    transparent 6px
-                ),
-                var(--clr-dark);
-            border-radius: 8px;
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        /* ---= Timer Display =--- */
-        .timer-display-wrapper {
-            flex: 2;
-            background: var(--clr-bg);
-            border: 4px solid var(--clr-dark);
-            border-radius: 10px;
-            padding: 10px 20px;
-            box-shadow: inset 3px 3px 5px rgba(0,0,0,0.4);
-            text-align: center;
-            position: relative; /* For status light */
-        }
-
-        #time-left {
-            font-family: 'Righteous', cursive; /* Digital-like but retro */
-            font-size: 4rem;
-            color: var(--clr-secondary);
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.5), -1px -1px 0px rgba(0,0,0,0.2);
-            line-height: 1;
-        }
-
-        #timer-status {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.2rem;
-            color: var(--clr-dark);
-            margin-top: 5px;
+            font-size: 3em;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 8px;
+            text-shadow: 4px 4px 6px #000;
+            margin-bottom: 30px;
         }
 
-        /* Status Indicator Light (like on old amps) */
-        .status-light {
+        .dial {
+            background: #222;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 4px solid #444;
+            position: relative;
+        }
+
+        .tuner {
+            height: 40px;
+            background: #111;
+            border: 2px solid #555;
+            border-radius: 5px;
+            position: relative;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .needle {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background-color: #555; /* Off state */
-            border: 1px solid var(--clr-dark);
-            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.5);
-            transition: background-color 0.3s ease;
-        }
-        .status-light.active {
-            background-color: #00ff00; /* Green light for running */
-            box-shadow: 0 0 5px #00ff00, inset 1px 1px 2px rgba(0,0,0,0.5);
-        }
-        .status-light.break {
-            background-color: var(--clr-accent); /* Yellow light for break */
-            box-shadow: 0 0 5px var(--clr-accent), inset 1px 1px 2px rgba(0,0,0,0.5);
+            width: 2px;
+            height: 100%;
+            background: #e00;
+            top: 0;
+            transition: left 0.3s ease;
+            box-shadow: 0 0 5px #e00;
         }
 
+        .station-info {
+            text-align: center;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 3px #000;
+        }
 
-        /* ---= Controls Area =--- */
         .controls {
             display: flex;
-            justify-content: space-around;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            border-radius: 15px;
-            border: 2px solid rgba(0,0,0,0.2);
-            box-shadow: inset 3px 3px 5px rgba(0,0,0,0.3);
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .control-button {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.3rem;
-            padding: 12px 20px;
-            border-radius: 50px; /* Rounded pill shape */
-            border: 2px solid var(--clr-chrome-border);
-            background: var(--clr-chrome);
-            color: var(--clr-dark);
+        button {
+            flex: 1;
+            padding: 15px;
+            background: #555;
+            border: 2px solid #777;
+            border-radius: 8px;
+            color: #e0e0e0;
             cursor: pointer;
+            font-size: 1.1em;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3), inset 1px 1px 1px rgba(255,255,255,0.7);
-            transition: all 0.1s ease-out;
-            min-width: 100px;
+            transition: all 0.2s;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        button:hover {
+            background: #777;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+        }
+
+        button.active {
+            background: #880000;
+            border-color: #aa0000;
+        }
+
+        .volume {
+            margin-top: 25px;
             text-align: center;
         }
 
-        .control-button:hover {
-            filter: brightness(1.1);
-            box-shadow: 4px 4px 7px rgba(0, 0, 0, 0.35), inset 1px 1px 1px rgba(255,255,255,0.7);
-        }
-
-        .control-button:active {
-            transform: translate(2px, 2px);
-            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4), inset 2px 2px 3px rgba(0,0,0,0.3);
-            filter: brightness(0.9);
-        }
-
-        /* Specific button colors for visual cue */
-        #start-pause { background: linear-gradient(180deg, #aaffaa 0%, #90ee90 10%, #50c878 48%, #3cb371 50%, #50c878 52%, #90ee90 90%, #aaffaa 100%); } /* Greenish Chrome */
-        #reset { background: linear-gradient(180deg, #ffaaaa 0%, #ff8888 10%, #cd5c5c 48%, #bc4c4c 50%, #cd5c5c 52%, #ff8888 90%, #ffaaaa 100%); } /* Reddish Chrome */
-        #skip { background: linear-gradient(180deg, #ffffaa 0%, #ffee88 10%, #ffd700 48%, #eec700 50%, #ffd700 52%, #ffee88 90%, #ffffaa 100%); } /* Yellowish Chrome */
-
-
-        /* ---= Pomodoro Counter =--- */
-        .pomodoro-counter {
-            display: flex;
-            justify-content: center;
+        input[type="range"] {
+            width: 85%;
+            -webkit-appearance: none;
+            background: #444;
+            height: 12px;
+            border-radius: 6px;
+            outline: none;
             margin-top: 10px;
-            gap: 8px;
         }
 
-        .pomodoro-dot {
-            width: 15px;
-            height: 15px;
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #e0e0e0;
             border-radius: 50%;
-            background-color: rgba(0,0,0,0.2);
-            border: 1px solid rgba(0,0,0,0.4);
-            transition: background-color 0.3s ease;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px #000;
         }
 
-        .pomodoro-dot.completed {
-            background-color: var(--clr-secondary);
-            box-shadow: 0 0 3px var(--clr-secondary);
+        .speaker {
+            width: 130px;
+            height: 130px;
+            background: repeating-linear-gradient(
+                45deg,
+                #444,
+                #444 6px,
+                #333 6px,
+                #333 12px
+            );
+            border-radius: 50%;
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            box-shadow: inset 0 0 20px #000;
+            animation: pulse 1.5s infinite;
         }
 
-        /* ---= Responsiveness (Basic) =--- */
-        @media (max-width: 500px) {
-            .brand { font-size: 2rem; }
-            #time-left { font-size: 3rem; }
-            .control-button { font-size: 1rem; padding: 10px 15px; min-width: 80px; }
-            .display-grill-area { flex-direction: column; }
-            .speaker-grill { width: 80%; height: 50px; margin: 0 auto; }
-            .timer-display-wrapper { width: 100%; }
-            .controls { flex-wrap: wrap; gap: 10px; }
+        .presets {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
 
+        .preset-btn {
+            width: 50px;
+            padding: 10px;
+            font-size: 0.9em;
+        }
+
+        @keyframes noise {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(1px, -1px); }
+            50% { transform: translate(-1px, 1px); }
+            75% { transform: translate(1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
-
-    <div class="stereo-container">
-        <h1 class="brand">TempoMatic 5000</h1>
-
-        <div class="display-grill-area">
-            <div class="speaker-grill"></div>
-            <div class="timer-display-wrapper">
-                <div id="status-light" class="status-light"></div>
-                <div id="time-left">25:00</div>
-                <div id="timer-status">Work Session</div>
+    <div class="container">
+        <div class="radio-box">
+            <div class="distortion-overlay"></div>
+            <div class="speaker"></div>
+            <h1 class="title">Retro Radio 1955</h1>
+            <div class="dial">
+                <div class="tuner">
+                    <div class="needle" id="needle"></div>
+                </div>
+                <div class="station-info" id="stationInfo">Select a Station</div>
+                <div class="controls">
+                    <button id="prevStation" onclick="changeStation(-1)">Prev</button>
+                    <button id="playStop" onclick="togglePlay()">Play</button>
+                    <button id="nextStation" onclick="changeStation(1)">Next</button>
+                </div>
             </div>
-            <div class="speaker-grill"></div>
-        </div>
-
-        <div class="controls">
-            <button id="start-pause" class="control-button">Start</button>
-            <button id="reset" class="control-button">Reset</button>
-            <button id="skip" class="control-button">Skip</button>
-        </div>
-
-        <div class="pomodoro-counter">
-            <div class="pomodoro-dot" id="dot-0"></div>
-            <div class="pomodoro-dot" id="dot-1"></div>
-            <div class="pomodoro-dot" id="dot-2"></div>
-            <div class="pomodoro-dot" id="dot-3"></div>
+            <div class="volume">
+                Volume
+                <input type="range" min="0" max="100" value="50" id="volume" onchange="updateVolume()">
+            </div>
+            <div class="presets" id="presets"></div>
         </div>
     </div>
 
+    <audio id="radioAudio" preload="none"></audio>
+    <audio id="staticAudio" preload="auto" loop>
+        <source src="data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIA/+MYxDsAAABsAADwAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAABsAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+    </audio>
+
     <script>
-        // ---= DOM Elements =---
-        const timeLeftDisplay = document.getElementById('time-left');
-        const timerStatusDisplay = document.getElementById('timer-status');
-        const startPauseButton = document.getElementById('start-pause');
-        const resetButton = document.getElementById('reset');
-        const skipButton = document.getElementById('skip');
-        const statusLight = document.getElementById('status-light');
-        const pomodoroDots = document.querySelectorAll('.pomodoro-dot');
+        const audio = document.getElementById('radioAudio');
+        const staticAudio = document.getElementById('staticAudio');
+        const stationInfo = document.getElementById('stationInfo');
+        const playStopBtn = document.getElementById('playStop');
+        const needle = document.getElementById('needle');
+        const presets = document.getElementById('presets');
+        const volumeControl = document.getElementById('volume');
 
-        // ---= Timer Settings (in seconds) =---
-        const workTime = 25 * 60; // 25 minutes
-        const shortBreakTime = 5 * 60; // 5 minutes
-        const longBreakTime = 15 * 60; // 15 minutes
+        // Real radio stations with stream URLs
+        const stations = [
+            { name: "Classic Rock 101", url: "http://stream.zeno.fm/8v6k3nq5k0zuv" },
+            { name: "Jazz FM", url: "http://stream.zeno.fm/5nq5k0zuv8v6k" },
+            { name: "Retro Hits 50s", url: "http://stream.zeno.fm/3nq5k0zuv8v6k" },
+            { name: "Blues Radio", url: "http://stream.zeno.fm/9v6k3nq5k0zuv" },
+            { name: "Oldies 105.5", url: "http://stream.zeno.fm/7nq5k0zuv8v6k" }
+        ];
 
-        // ---= Timer State =---
-        let timerInterval = null;
-        let remainingTime = workTime;
-        let isPaused = true;
-        let currentMode = 'work'; // 'work', 'shortBreak', 'longBreak'
-        let workSessionsCompleted = 0;
+        let currentStationIndex = -1;
+        let isPlaying = false;
 
-        // ---= Audio Feedback (Optional - Simple Beep) =---
-        // Browsers might block autoplay, keeping it simple
-        // let beepSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."); // Replace with actual short Base64 beep if desired
-        function playBeep() {
-            // Simple visual flash instead of audio for broader compatibility
-            const container = document.querySelector('.stereo-container');
-            container.style.transition = 'box-shadow 0.1s ease-out';
-            const originalShadow = container.style.boxShadow;
-            container.style.boxShadow = `0 0 25px 5px ${currentMode === 'work' ? 'var(--clr-accent)' : 'var(--clr-secondary)'}, ${originalShadow}`;
-            setTimeout(() => {
-                container.style.boxShadow = originalShadow;
-            }, 200);
-             // Add a simple alert as fallback notification
-            alert(`${timerStatusDisplay.textContent} Finished!`);
-        }
-
-        // ---= Update Display Functions =---
-        function updateDisplay() {
-            const minutes = Math.floor(remainingTime / 60);
-            const seconds = remainingTime % 60;
-            timeLeftDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-            // Update Status Light
-            statusLight.classList.remove('active', 'break');
-            if (!isPaused) {
-                if (currentMode === 'work') {
-                    statusLight.classList.add('active');
-                } else {
-                    statusLight.classList.add('break');
-                }
-            }
-        }
-
-        function updateStatusText() {
-            switch (currentMode) {
-                case 'work':
-                    timerStatusDisplay.textContent = `Work Session #${workSessionsCompleted + 1}`;
-                    break;
-                case 'shortBreak':
-                    timerStatusDisplay.textContent = 'Short Break';
-                    break;
-                case 'longBreak':
-                    timerStatusDisplay.textContent = 'Long Break';
-                    break;
-            }
-        }
-
-        function updatePomodoroDots() {
-            pomodoroDots.forEach((dot, index) => {
-                if (index < workSessionsCompleted) {
-                    dot.classList.add('completed');
-                } else {
-                    dot.classList.remove('completed');
-                }
+        // Populate preset buttons
+        function populatePresets() {
+            stations.forEach((station, index) => {
+                const btn = document.createElement('button');
+                btn.textContent = `${index + 1}`;
+                btn.className = 'preset-btn';
+                btn.onclick = () => selectStation(index);
+                presets.appendChild(btn);
             });
         }
 
-        // ---= Timer Control Functions =---
-        function startTimer() {
-            isPaused = false;
-            startPauseButton.textContent = 'Pause';
-            updateDisplay(); // Update light immediately
-
-            timerInterval = setInterval(() => {
-                remainingTime--;
-                updateDisplay();
-
-                if (remainingTime <= 0) {
-                    clearInterval(timerInterval);
-                    playBeep();
-                    nextMode();
-                }
-            }, 1000);
+        // Update needle position
+        function updateNeedle() {
+            const tunerWidth = document.querySelector('.tuner').offsetWidth;
+            const position = currentStationIndex === -1 
+                ? 0 
+                : (currentStationIndex / (stations.length - 1)) * (tunerWidth - 2);
+            needle.style.left = `${position}px`;
         }
 
-        function pauseTimer() {
-            isPaused = true;
-            clearInterval(timerInterval);
-            startPauseButton.textContent = 'Start';
-            updateDisplay(); // Update light immediately
-        }
+        // Select a station
+        function selectStation(index) {
+            if (index === currentStationIndex && isPlaying) return;
 
-        function resetTimer(mode = currentMode) {
-            pauseTimer(); // Stop any running timer
-            currentMode = mode; // Keep current mode or set new if specified
-
-            switch (currentMode) {
-                case 'work':
-                    remainingTime = workTime;
-                    break;
-                case 'shortBreak':
-                    remainingTime = shortBreakTime;
-                    break;
-                case 'longBreak':
-                    remainingTime = longBreakTime;
-                    break;
+            // Play static during transition
+            if (isPlaying) {
+                staticAudio.volume = 0.3;
+                staticAudio.play();
+                audio.pause();
+                setTimeout(() => staticAudio.pause(), 300);
             }
 
-            updateDisplay();
-            updateStatusText();
-            // Don't reset workSessionsCompleted on simple reset, only when skipping or finishing a cycle.
+            currentStationIndex = index;
+            audio.src = stations[index].url;
+            stationInfo.textContent = stations[index].name;
+            updateNeedle();
+            updatePresetUI();
+
+            if (isPlaying) {
+                audio.play().catch(e => console.log("Playback error:", e));
+            }
         }
 
-        function nextMode() {
-            pauseTimer(); // Ensure timer is stopped
-
-            if (currentMode === 'work') {
-                workSessionsCompleted++;
-                updatePomodoroDots();
-                if (workSessionsCompleted % 4 === 0) {
-                    currentMode = 'longBreak';
-                    remainingTime = longBreakTime;
-                } else {
-                    currentMode = 'shortBreak';
-                    remainingTime = shortBreakTime;
-                }
-            } else { // If currently on a break
-                currentMode = 'work';
-                remainingTime = workTime;
-                // Reset dots if starting a new cycle after long break
-                if (workSessionsCompleted % 4 === 0 && currentMode === 'work' && workSessionsCompleted > 0) {
-                   // Handled slightly differently now, reset happens before next work starts
-                   // console.log("Starting new cycle after long break");
-                   // Handled by skip function or manual reset implicitly
-                }
+        // Update preset button UI
+        function updatePresetUI() {
+            const buttons = presets.children;
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].classList.toggle('active', i === currentStationIndex);
             }
-
-             // If we completed a full cycle (4 work + 1 long break), reset counter for the *next* cycle
-            if (currentMode === 'work' && workSessionsCompleted > 0 && workSessionsCompleted % 4 === 0) {
-                 // Check if the *previous* mode was longBreak before resetting visually
-                 // This logic is tricky. Let's simplify: dots reset when long break *ends*.
-                 if (timerStatusDisplay.textContent === 'Long Break') { // Check previous state text before update
-                     workSessionsCompleted = 0; // Reset for the NEW cycle
-                     updatePomodoroDots(); // Clear dots
-                 }
-            }
-
-
-            updateDisplay();
-            updateStatusText();
-            startTimer(); // Automatically start the next timer
         }
 
-         function skipMode() {
-            pauseTimer(); // Ensure timer is stopped
-
-            // Determine next logical state
-            let nextState = 'work'; // Default assumption
-            if (currentMode === 'work') {
-                // Don't increment work session here, just skip to appropriate break
-                if ((workSessionsCompleted + 1) % 4 === 0) { // Check if NEXT session would trigger long break
-                    nextState = 'longBreak';
-                } else {
-                    nextState = 'shortBreak';
-                }
-                 workSessionsCompleted++; // Increment *after* checking, as we skipped the work
-                 updatePomodoroDots();
-            } else { // If currently on a break, next is always work
-                nextState = 'work';
-                 // If skipping the long break, visually reset the dots for the new cycle
-                if (currentMode === 'longBreak') {
-                    workSessionsCompleted = 0;
-                    updatePomodoroDots(); // Clear dots as we start the fresh cycle
-                }
+        // Toggle play/stop
+        function togglePlay() {
+            if (currentStationIndex === -1) {
+                selectStation(0); // Start with first station if none selected
             }
 
-            currentMode = nextState;
-             resetTimer(currentMode); // Resets time to the new mode's default
-             updateDisplay();
-             updateStatusText();
-             startTimer(); // Automatically start the skipped-to timer
-        }
-
-
-        // ---= Event Listeners =---
-        startPauseButton.addEventListener('click', () => {
-            if (isPaused) {
-                startTimer();
+            if (isPlaying) {
+                audio.pause();
+                staticAudio.pause();
+                playStopBtn.textContent = 'Play';
+                playStopBtn.classList.remove('active');
             } else {
-                pauseTimer();
+                audio.play().catch(e => console.log("Playback error:", e));
+                playStopBtn.textContent = 'Stop';
+                playStopBtn.classList.add('active');
             }
-        });
+            isPlaying = !isPlaying;
+        }
 
-        resetButton.addEventListener('click', () => {
-             // Simple reset keeps current mode, resets time.
-             // Hold Shift + Click to FULLY reset cycle? Maybe too complex.
-             // Let's make reset always go back to the START of the current mode's time.
-             // And if it was running, stop it.
-             resetTimer(currentMode);
-        });
+        // Change station (next/prev)
+        function changeStation(direction) {
+            if (stations.length === 0) return;
 
-        skipButton.addEventListener('click', () => {
-            if (confirm('Skip to the next session?')) { // Confirmation dialog
-                skipMode();
-            }
-        });
+            let newIndex = currentStationIndex + direction;
+            if (newIndex < 0) newIndex = stations.length - 1;
+            if (newIndex >= stations.length) newIndex = 0;
 
-        // ---= Initial Setup =---
-        window.onload = () => {
-            resetTimer('work'); // Start with a work session ready
-            updatePomodoroDots(); // Ensure dots are initially clear
-        };
+            selectStation(newIndex);
+        }
 
+        // Update volume
+        function updateVolume() {
+            const volume = volumeControl.value / 100;
+            audio.volume = volume;
+            staticAudio.volume = volume * 0.3; // Static is quieter
+        }
+
+        // Initialize
+        populatePresets();
+        audio.volume = 0.5;
+        staticAudio.volume = 0.15;
+        updateNeedle();
     </script>
-
 </body>
 </html>
