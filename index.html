@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Pomodoro 1955 - Focus Like It's the Fifties!</title>
+    <title>Retro UFO Invasion 1955</title>
     <style>
         body {
             margin: 0;
@@ -23,8 +23,9 @@
             position: relative;
         }
 
-        .pomodoro-box {
-            width: 600px;
+        .game-box {
+            width: 700px;
+            height: 500px;
             padding: 40px;
             background: #333;
             border: 8px solid #555;
@@ -54,53 +55,59 @@
 
         .title {
             text-align: center;
-            font-size: 2.8em;
+            font-size: 2.5em;
             text-transform: uppercase;
             letter-spacing: 8px;
             text-shadow: 4px 4px 6px #000;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
-        .timer-display {
-            text-align: center;
-            font-size: 4em;
+        .game-area {
+            width: 100%;
+            height: 400px;
             background: #222;
-            padding: 20px;
             border: 4px solid #444;
             border-radius: 15px;
-            margin: 20px 0;
-            text-shadow: 2px 2px 4px #000;
             position: relative;
+            overflow: hidden;
         }
 
-        .timer-dial {
+        .player {
             position: absolute;
-            width: 100%;
-            height: 10px;
-            background: #111;
-            top: -14px;
-            left: 0;
-            border-bottom: 2px solid #555;
+            bottom: 20px;
+            width: 40px;
+            height: 20px;
+            background: #e0e0e0;
+            border: 2px solid #777;
+            border-radius: 5px 5px 0 0;
+            box-shadow: 0 0 5px #fff;
         }
 
-        .timer-needle {
+        .ufo {
             position: absolute;
-            width: 2px;
-            height: 100%;
-            background: #e00;
-            top: 0;
-            transition: left 0.5s linear;
-            box-shadow: 0 0 5px #e00;
+            width: 30px;
+            height: 15px;
+            background: #555;
+            border: 2px solid #777;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #888;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 1.5em;
+            margin-top: 20px;
+            text-shadow: 2px 2px 4px #000;
         }
 
         .controls {
             display: flex;
-            justify-content: space-between;
-            gap: 15px;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
         }
 
         button {
-            flex: 1;
             padding: 15px;
             background: #555;
             border: 2px solid #777;
@@ -117,18 +124,6 @@
             background: #777;
             transform: translateY(-2px);
             box-shadow: 0 3px 6px rgba(0,0,0,0.6);
-        }
-
-        button.active {
-            background: #880000;
-            border-color: #aa0000;
-        }
-
-        .status {
-            text-align: center;
-            font-size: 1.3em;
-            margin-top: 20px;
-            text-shadow: 1px 1px 3px #000;
         }
 
         .speaker {
@@ -148,8 +143,15 @@
             box-shadow: inset 0 0 20px #000;
         }
 
-        .speaker.active {
-            animation: pulse 1s infinite;
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            text-align: center;
+            text-shadow: 4px 4px 6px #000;
+            display: none;
         }
 
         @keyframes noise {
@@ -159,128 +161,132 @@
             75% { transform: translate(1px, 1px); }
             100% { transform: translate(0, 0); }
         }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="pomodoro-box">
+        <div class="game-box">
             <div class="distortion-overlay"></div>
-            <div class="speaker" id="speaker"></div>
-            <h1 class="title">Retro Pomodoro 1955</h1>
-            <div class="timer-display">
-                <div class="timer-dial">
-                    <div class="timer-needle" id="needle"></div>
-                </div>
-                <span id="timer">25:00</span>
+            <div class="speaker"></div>
+            <h1 class="title">UFO Invasion 1955</h1>
+            <div class="game-area" id="gameArea">
+                <div class="player" id="player"></div>
+                <div class="game-over" id="gameOver">Game Over!</div>
             </div>
+            <div class="score" id="score">Score: 0</div>
             <div class="controls">
-                <button id="work" onclick="startWork()">Work</button>
-                <button id="break" onclick="startBreak()">Break</button>
-                <button id="reset" onclick="resetTimer()">Reset</button>
+                <button id="startBtn" onclick="startGame()">Start</button>
+                <button id="resetBtn" onclick="resetGame()">Reset</button>
             </div>
-            <div class="status" id="status">Ready to Focus?</div>
         </div>
     </div>
 
-    <audio id="alarm" preload="auto">
+    <audio id="hitSound" preload="auto">
         <source src="data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIA/+MYxDsAAABsAADwAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAABsAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
     </audio>
 
     <script>
-        const timerDisplay = document.getElementById('timer');
-        const status = document.getElementById('status');
-        const workBtn = document.getElementById('work');
-        const breakBtn = document.getElementById('break');
-        const resetBtn = document.getElementById('reset');
-        const needle = document.getElementById('needle');
-        const speaker = document.getElementById('speaker');
-        const alarm = document.getElementById('alarm');
+        const gameArea = document.getElementById('gameArea');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverText = document.getElementById('gameOver');
+        const hitSound = document.getElementById('hitSound');
 
-        let timeLeft = 25 * 60; // Default to 25 minutes in seconds
-        let isRunning = false;
-        let interval = null;
-        let totalTime = 25 * 60; // For needle movement
+        let playerX = 330; // Initial player position
+        let score = 0;
+        let gameActive = false;
+        let ufos = [];
+        let animationFrame;
 
-        // Format time as MM:SS
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-
-        // Update needle position
-        function updateNeedle() {
-            const dialWidth = document.querySelector('.timer-dial').offsetWidth;
-            const position = (1 - timeLeft / totalTime) * (dialWidth - 2);
-            needle.style.left = `${position}px`;
-        }
-
-        // Update timer display and check if done
-        function updateTimer() {
-            timerDisplay.textContent = formatTime(timeLeft);
-            updateNeedle();
-
-            if (timeLeft <= 0) {
-                clearInterval(interval);
-                isRunning = false;
-                alarm.play();
-                speaker.classList.add('active');
-                workBtn.classList.remove('active');
-                breakBtn.classList.remove('active');
-                status.textContent = "Time's Up!";
-                setTimeout(() => speaker.classList.remove('active'), 2000);
-                return;
+        // Move player with arrow keys
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            if (e.key === 'ArrowLeft' && playerX > 0) {
+                playerX -= 10;
+            } else if (e.key === 'ArrowRight' && playerX < gameArea.offsetWidth - 40) {
+                playerX += 10;
             }
-            timeLeft--;
+            player.style.left = `${playerX}px`;
+        });
+
+        // Create a UFO
+        function createUFO() {
+            const ufo = document.createElement('div');
+            ufo.className = 'ufo';
+            ufo.style.left = `${Math.random() * (gameArea.offsetWidth - 30)}px`;
+            ufo.style.top = '0px';
+            gameArea.appendChild(ufo);
+            ufos.push({ element: ufo, y: 0 });
         }
 
-        // Start work session (25 minutes)
-        function startWork() {
-            if (isRunning) return;
-            timeLeft = 25 * 60;
-            totalTime = 25 * 60;
-            isRunning = true;
-            interval = setInterval(updateTimer, 1000);
-            status.textContent = "Work Session";
-            workBtn.classList.add('active');
-            breakBtn.classList.remove('active');
+        // Update game state
+        function updateGame() {
+            if (!gameActive) return;
+
+            // Move UFOs
+            ufos.forEach((ufo, index) => {
+                ufo.y += 2;
+                ufo.element.style.top = `${ufo.y}px`;
+
+                // Check collision with player
+                const playerRect = player.getBoundingClientRect();
+                const ufoRect = ufo.element.getBoundingClientRect();
+                if (
+                    playerRect.left < ufoRect.right &&
+                    playerRect.right > ufoRect.left &&
+                    playerRect.top < ufoRect.bottom &&
+                    playerRect.bottom > ufoRect.top
+                ) {
+                    endGame();
+                    return;
+                }
+
+                // Remove UFO if it reaches bottom
+                if (ufo.y > gameArea.offsetHeight) {
+                    gameArea.removeChild(ufo.element);
+                    ufos.splice(index, 1);
+                    score += 10;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                }
+            });
+
+            // Spawn new UFOs
+            if (Math.random() < 0.02) {
+                createUFO();
+            }
+
+            animationFrame = requestAnimationFrame(updateGame);
         }
 
-        // Start break session (5 minutes)
-        function startBreak() {
-            if (isRunning) return;
-            timeLeft = 5 * 60;
-            totalTime = 5 * 60;
-            isRunning = true;
-            interval = setInterval(updateTimer, 1000);
-            status.textContent = "Break Time";
-            breakBtn.classList.add('active');
-            workBtn.classList.remove('active');
+        // Start the game
+        function startGame() {
+            if (gameActive) return;
+            gameActive = true;
+            gameOverText.style.display = 'none';
+            score = 0;
+            scoreDisplay.textContent = `Score: ${score}`;
+            playerX = 330;
+            player.style.left = `${playerX}px`;
+            ufos.forEach(ufo => gameArea.removeChild(ufo.element));
+            ufos = [];
+            animationFrame = requestAnimationFrame(updateGame);
         }
 
-        // Reset timer
-        function resetTimer() {
-            clearInterval(interval);
-            isRunning = false;
-            timeLeft = 25 * 60;
-            totalTime = 25 * 60;
-            timerDisplay.textContent = formatTime(timeLeft);
-            updateNeedle();
-            status.textContent = "Ready to Focus?";
-            workBtn.classList.remove('active');
-            breakBtn.classList.remove('active');
-            speaker.classList.remove('active');
+        // End the game
+        function endGame() {
+            gameActive = false;
+            cancelAnimationFrame(animationFrame);
+            gameOverText.style.display = 'block';
+            hitSound.play();
+            ufos.forEach(ufo => gameArea.removeChild(ufo.element));
+            ufos = [];
         }
 
-        // Initial setup
-        timerDisplay.textContent = formatTime(timeLeft);
-        updateNeedle();
+        // Reset the game
+        function resetGame() {
+            endGame();
+            startGame();
+        }
     </script>
 </body>
 </html>
