@@ -182,10 +182,9 @@
         const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
         const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
         const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
-        const MAX_RETRIES = 3; // Increased retries
-        const RETRY_DELAY_MS = 3000; // Increased delay between retries
-        const REQUEST_TIMEOUT_MS = 120000; // Increased to 2 minutes
-        const REQUEST_DELAY_MS = 1000; // Delay between requests to avoid rate limiting
+        const MAX_RETRIES = 1; // Back to original for simplicity
+        const RETRY_DELAY_MS = 2000; // Back to original
+        const REQUEST_TIMEOUT_MS = 90000; // Back to original 90s
         const QUIZ_HISTORY_KEY = 'quizHistory';
 
         // --- Helper Functions ---
@@ -447,34 +446,39 @@
 
         async function generateQuestions(questionType, numQuestions, modelName) {
             const questions = [];
-            let attemptNum = 0;
             let failedCount = 0;
 
-            while (questions.length < numQuestions) {
-                attemptNum++;
-                loadingText.textContent = `Generating question ${questions.length + 1} of ${numQuestions} (Attempt ${attemptNum})...`;
+            for (let i = 0; i < numQuestions; i++) {
+                loadingText.textContent = `Generating question ${i + 1} of ${numQuestions}...`;
                 loadingIndicator.classList.remove('hidden-element');
 
-                const question = await generateSingleQuestion(questionType, modelName, attemptNum, numQuestions);
+                const question = await generateSingleQuestion(questionType, modelName, i + 1, numQuestions);
                 if (question) {
                     questions.push(question);
-                    console.log(`Successfully generated question ${questions.length} of ${numQuestions}`);
                 } else {
                     failedCount++;
                 }
+            }
 
-                // Add delay between requests to avoid rate limiting
-                if (questions.length < numQuestions) {
-                    await delay(REQUEST_DELAY_MS);
+            const remaining = numQuestions - questions.length;
+            if (remaining > 0) {
+                loadingText.textContent = `Generating ${remaining} additional question${remaining > 1 ? 's' : ''} to reach ${numQuestions}...`;
+                for (let i = 0; i < remaining; i++) {
+                    const extraQuestion = await generateSingleQuestion(questionType, modelName, numQuestions + i + 1, numQuestions);
+                    if (extraQuestion) {
+                        questions.push(extraQuestion);
+                    } else {
+                        failedCount++;
+                        console.warn(`Failed to generate additional question ${i + 1} of ${remaining}`);
+                    }
                 }
             }
 
             loadingIndicator.classList.add('hidden-element');
-            if (failedCount > 0) {
-                console.log(`Total attempts: ${attemptNum}, Successful: ${questions.length}, Failed: ${failedCount}`);
-                displayError(customizationError, `Generated ${questions.length} questions after ${failedCount} failures. All requested questions generated successfully.`);
+            if (questions.length < numQuestions) {
+                displayError(customizationError, `Generated only ${questions.length} of ${numQuestions} questions due to ${failedCount} failures. Check console for details.`);
             }
-            return questions;
+            return questions.length > 0 ? questions : [];
         }
 
         async function startNewQuiz(prompt, num) {
@@ -492,7 +496,7 @@
                 showPage('quiz-page');
                 await displayQuestion(currentQuestionIndex);
             } else {
-                displayError(customizationError, "Failed to generate any questions after multiple attempts. Check your prompt, model, or API key.");
+                displayError(customizationError, "Failed to generate any questions. Check your prompt, model, or API key.");
             }
             loadingIndicator.classList.add('hidden-element');
             startQuizButton.disabled = false;
@@ -521,7 +525,7 @@
             progressTextElement.textContent = `Question ${currentQuestionNum} / ${totalQuestions}`;
             progressBarElement.style.width = `${(currentQuestionNum / totalQuestions) * 100}%`;
 
-            await typesetMathJax([questionTextElementiwalContainer]);
+            await typesetMathJax([questionTextElement, optionsContainer]); // Fixed typo
 
             const answered = userAnswers.find(ans => ans.questionIndex === index);
             prevButton.disabled = index === 0;
