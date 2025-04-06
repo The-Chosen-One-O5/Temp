@@ -182,10 +182,9 @@
         const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
         const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
         const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
-        const MAX_RETRIES = 2; // Increased to 2 for better resilience
+        const MAX_RETRIES = 1;
         const RETRY_DELAY_MS = 2000;
         const REQUEST_TIMEOUT_MS = 90000;
-        const QUIZ_HISTORY_KEY = 'quizHistory';
 
         // --- Helper Functions ---
         function showPage(pageId) {
@@ -217,31 +216,6 @@
             } else {
                 console.warn("MathJax not ready.");
             }
-        }
-
-        // --- Local Storage Functions ---
-        function loadQuizHistory() {
-            const history = localStorage.getItem(QUIZ_HISTORY_KEY);
-            return history ? JSON.parse(history) : [];
-        }
-
-        function saveQuizHistory(history) {
-            localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(history));
-        }
-
-        function addQuizToHistory(settings, score, totalQuestions) {
-            const history = loadQuizHistory();
-            const quizEntry = {
-                prompt: settings.prompt,
-                numQuestions: settings.numQuestions,
-                model: settings.model,
-                score: score,
-                totalQuestions: totalQuestions,
-                timestamp: new Date().toISOString()
-            };
-            history.push(quizEntry);
-            saveQuizHistory(history);
-            console.log("Quiz history updated:", history);
         }
 
         // --- Setup Page Logic ---
@@ -347,18 +321,12 @@
                 The question must have:
                 - A question stem (e.g., similar to JEE Main 2025 PYQs like 'The position of a particle moving on x-axis is given by x(t) = A sin t + B cos^2 t + C t^2 + D, where t is time. The dimension of ABC/D is').
                 - Exactly 4 options labeled A, B, C, D within an "options" object.
-                - The correct answer as "correctAnswerIndex" (0-based index: 0, 1, 2, or 3).
+                - The correct answer as "correctAnswerIndex" (0-based index).
                 - An explanation.
-                Return the response as a valid JSON object with fields: "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", and "explanation". 
+                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", and "explanation" fields. 
                 Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations where applicable. 
-                If PYQs are requested (e.g., JEE Main 2025), base the question on real previous year questions or closely mimic them. 
-                Do not generate random unrelated questions. Ensure the JSON is valid and complete. Example:
-                {
-                    "question": "What is 2 + 2?",
-                    "options": {"A": "3", "B": "4", "C": "5", "D": "6"},
-                    "correctAnswerIndex": 1,
-                    "explanation": "2 + 2 equals 4."
-                }
+                If PYQs are requested (e.g., JEE Main 2025), ensure the question is based on real previous year questions or closely mimics them. 
+                Do not generate random unrelated questions. Ensure the JSON is complete and properly closed.
             `;
 
             const payload = {
@@ -384,7 +352,7 @@
 
                 try {
                     if (attempt > 0) {
-                        console.log(`Retrying question ${attemptNum} (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
+                        console.log(`Retrying question ${attemptNum} (Attempt ${attempt}/${MAX_RETRIES})...`);
                         await delay(RETRY_DELAY_MS);
                     }
 
@@ -402,7 +370,7 @@
                     }
 
                     const data = await response.json();
-                    console.log(`Raw API Response for question ${attemptNum}:`, JSON.stringify(data, null, 2));
+                    console.log(`API Response for question ${attemptNum}:`, data);
 
                     if (!data.choices || !data.choices.length || !data.choices[0].message || !data.choices[0].message.content) {
                         throw new Error(`Invalid response format for question ${attemptNum}`);
@@ -414,8 +382,6 @@
                     const jsonMatch = content.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         content = jsonMatch[0];
-                    } else {
-                        throw new Error(`No JSON found in response for question ${attemptNum}: ${content}`);
                     }
 
                     try {
@@ -442,42 +408,51 @@
                     };
                 } catch (error) {
                     lastError = error;
-                    console.error(`Error for question ${attemptNum} (Attempt ${attempt + 1}):`, error);
+                    console.error(`Error for question ${attemptNum} (Attempt ${attempt}):`, error);
                     if (attempt === MAX_RETRIES) {
-                        console.warn(`Failed to generate question ${attemptNum} after ${MAX_RETRIES + 1} attempts: ${error.message}`);
-                        return null;
+                        console.warn(`Skipping question ${attemptNum} after retries due to: ${error.message}`);
+                        return null; // Return null to indicate failure
                     }
                 }
             }
-            return null;
+            return null; // Fallback, should not reach here
         }
 
         async function generateQuestions(questionType, numQuestions, modelName) {
             const questions = [];
-            let attemptNum = 0;
             let failedCount = 0;
 
-            while (questions.length < numQuestions && attemptNum < numQuestions * 3) { // Cap at 3x attempts
-                attemptNum++;
-                loadingText.textContent = `Generating question ${questions.length + 1} of ${numQuestions} (Attempt ${attemptNum})...`;
+            // Initial generation loop
+            for (let i = 0; i < numQuestions; i++) {
+                loadingText.textContent = `Generating question ${i + 1} of ${numQuestions}...`;
                 loadingIndicator.classList.remove('hidden-element');
 
-                const question = await generateSingleQuestion(questionType, modelName, attemptNum, numQuestions);
+                const question = await generateSingleQuestion(questionType, modelName, i + 1, numQuestions);
                 if (question) {
                     questions.push(question);
-                    console.log(`Successfully generated question ${questions.length} of ${numQuestions}`);
                 } else {
                     failedCount++;
                 }
+            }
 
-                await delay(500); // Small delay to avoid rate limiting
+            // Generate additional questions to make up for failures
+            const remaining = numQuestions - questions.length;
+            if (remaining > 0) {
+                loadingText.textContent = `Generating ${remaining} additional question${remaining > 1 ? 's' : ''} to reach ${numQuestions}...`;
+                for (let i = 0; i < remaining; i++) {
+                    const extraQuestion = await generateSingleQuestion(questionType, modelName, numQuestions + i + 1, numQuestions);
+                    if (extraQuestion) {
+                        questions.push(extraQuestion);
+                    } else {
+                        failedCount++;
+                        console.warn(`Failed to generate additional question ${i + 1} of ${remaining}`);
+                    }
+                }
             }
 
             loadingIndicator.classList.add('hidden-element');
             if (questions.length < numQuestions) {
-                displayError(customizationError, `Generated only ${questions.length} of ${numQuestions} questions after ${failedCount} failures. Check console for details.`);
-            } else if (failedCount > 0) {
-                displayError(customizationError, `Generated ${numQuestions} questions with ${failedCount} failures. All requested questions completed.`);
+                displayError(customizationError, `Generated only ${questions.length} of ${numQuestions} questions due to ${failedCount} failures. Check console for details.`);
             }
             return questions.length > 0 ? questions : [];
         }
@@ -497,7 +472,7 @@
                 showPage('quiz-page');
                 await displayQuestion(currentQuestionIndex);
             } else {
-                displayError(customizationError, "Failed to generate any questions after multiple attempts. Check your prompt, model, or API key.");
+                displayError(customizationError, "Failed to generate any questions. Check your prompt, model, or API key.");
             }
             loadingIndicator.classList.add('hidden-element');
             startQuizButton.disabled = false;
@@ -601,7 +576,6 @@
 
         function showResults() {
             finalScoreElement.textContent = `${score} / ${currentQuestions.length}`;
-            addQuizToHistory(quizSettings, score, currentQuestions.length);
             showPage('results-page');
         }
 
