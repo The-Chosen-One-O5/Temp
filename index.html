@@ -26,23 +26,46 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/auto-render.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         .hidden-element { display: none; }
         .option-button { transition: background-color 0.2s ease, transform 0.1s ease, border-color 0.2s ease; }
-        .option-button:not(:disabled):hover { background-color: #e5e7eb; border-color: #9ca3af; }
+        .option-button:not(:disabled):hover { border-color: #9ca3af; }
         .option-button:not(:disabled):active { transform: scale(0.98); }
         .correct-answer { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
         .incorrect-answer { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         mjx-container { overflow-x: auto; overflow-y: hidden; display: block; margin: 0.5rem 0; padding: 2px; }
-        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; display: inline-block; }
+        .spinner { border: 4px solid rgba(255, 255, 255, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #question-text, #explanation-text, .option-button { word-wrap: break-word; overflow-wrap: break-word; }
+
+        /* Light Mode (default) */
+        body { background-color: #f3f4f6; color: #1f2937; }
+        .container { background-color: #ffffff; }
+        .option-button:not(:disabled):hover { background-color: #e5e7eb; }
+        .option-button { background-color: #ffffff; border-color: #d1d5db; }
+
+        /* Dark Mode */
+        body.dark-mode { background-color: #1f2937; color: #d1d5db; }
+        .dark-mode .container { background-color: #374151; }
+        .dark-mode .option-button:not(:disabled):hover { background-color: #4b5563; }
+        .dark-mode .option-button { background-color: #4b5563; border-color: #6b7280; }
+        .dark-mode .bg-gradient-to-br { background: linear-gradient(to bottom right, #4b5563, #6b7280, #9ca3af); }
+        .dark-mode .bg-gray-200 { background-color: #4b5563; }
+        .dark-mode .bg-gray-50 { background-color: #6b7280; }
+        .dark-mode .border-gray-200 { border-color: #6b7280; }
+        .dark-mode .text-gray-600 { color: #9ca3af; }
+        .dark-mode .text-gray-700 { color: #d1d5db; }
+        .dark-mode .text-gray-800 { color: #f3f4f6; }
+        .dark-mode .text-gray-900 { color: #ffffff; }
+        .dark-mode .bg-blue-50 { background-color: #1e3a8a; }
+        .dark-mode .border-blue-200 { border-color: #3b82f6; }
+        .dark-mode .text-blue-800 { color: #93c5fd; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-4">
-    <div class="container mx-auto max-w-2xl w-full bg-white rounded-xl shadow-2xl overflow-hidden">
+    <div class="container mx-auto max-w-2xl w-full rounded-xl shadow-2xl overflow-hidden">
 
         <div id="setup-page" class="p-6 md:p-10 transition-all duration-500">
             <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">AI PYQs Bot Setup</h1>
@@ -69,7 +92,10 @@
         </div>
 
         <div id="customization-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
-            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Customize Your Quiz</h1>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-center text-gray-800">Customize Your Quiz</h1>
+                <button id="toggle-dark-mode" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300">Toggle Dark Mode</button>
+            </div>
             <p class="text-center text-gray-600 mb-8">Describe the questions you need. Be specific!</p>
             <div class="space-y-5">
                 <div>
@@ -83,6 +109,7 @@
                 </div>
                 <div id="customization-error" class="text-red-600 text-sm hidden-element font-medium text-center p-2 bg-red-50 rounded-md border border-red-200"></div>
                 <button id="start-quiz" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generate & Start Quiz</button>
+                <button id="view-history" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">View History</button>
                 <button id="back-to-setup" class="w-full mt-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">Back to API Setup</button>
             </div>
             <div id="loading-indicator" class="hidden-element mt-6 text-center">
@@ -133,6 +160,14 @@
                 <button id="new-quiz" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Start New Quiz</button>
             </div>
         </div>
+
+        <div id="history-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Quiz History</h1>
+                <button id="back-to-customization" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">Back</button>
+            </div>
+            <div id="history-list" class="space-y-4"></div>
+        </div>
     </div>
 
     <script>
@@ -141,6 +176,7 @@
         const customizationPage = document.getElementById('customization-page');
         const quizPage = document.getElementById('quiz-page');
         const resultsPage = document.getElementById('results-page');
+        const historyPage = document.getElementById('history-page');
         const apiKeyInput = document.getElementById('apiKey');
         const baseUrlInput = document.getElementById('baseUrl');
         const openRouterModelInput = document.getElementById('openRouterModel');
@@ -150,6 +186,7 @@
         const numQuestionsInput = document.getElementById('numQuestions');
         const startQuizButton = document.getElementById('start-quiz');
         const backToSetupButton = document.getElementById('back-to-setup');
+        const viewHistoryButton = document.getElementById('view-history');
         const customizationError = document.getElementById('customization-error');
         const loadingIndicator = document.getElementById('loading-indicator');
         const loadingText = document.getElementById('loading-text');
@@ -167,6 +204,9 @@
         const finalScoreElement = document.getElementById('final-score');
         const restartQuizButton = document.getElementById('restart-quiz');
         const newQuizButton = document.getElementById('new-quiz');
+        const toggleDarkModeButton = document.getElementById('toggle-dark-mode');
+        const historyList = document.getElementById('history-list');
+        const backToCustomizationButton = document.getElementById('back-to-customization');
 
         // --- State Variables ---
         let apiKey = '';
@@ -185,10 +225,11 @@
         const MAX_RETRIES = 1;
         const RETRY_DELAY_MS = 2000;
         const REQUEST_TIMEOUT_MS = 90000;
+        const QUIZ_HISTORY_KEY = 'quizHistory';
 
         // --- Helper Functions ---
         function showPage(pageId) {
-            [setupPage, customizationPage, quizPage, resultsPage].forEach(page => {
+            [setupPage, customizationPage, quizPage, resultsPage, historyPage].forEach(page => {
                 page.classList.toggle('hidden-element', page.id !== pageId);
             });
             window.scrollTo(0, 0);
@@ -216,6 +257,67 @@
             } else {
                 console.warn("MathJax not ready.");
             }
+        }
+
+        // --- Local Storage Functions ---
+        function loadQuizHistory() {
+            const history = localStorage.getItem(QUIZ_HISTORY_KEY);
+            return history ? JSON.parse(history) : [];
+        }
+
+        function saveQuizHistory(history) {
+            localStorage.setItem(QUIZ_HISTORY_KEY, JSON.stringify(history));
+        }
+
+        function addQuizToHistory(settings, score, totalQuestions) {
+            const history = loadQuizHistory();
+            const quizEntry = {
+                prompt: settings.prompt,
+                numQuestions: settings.numQuestions,
+                model: settings.model,
+                score: score,
+                totalQuestions: totalQuestions,
+                timestamp: new Date().toISOString()
+            };
+            history.push(quizEntry);
+            saveQuizHistory(history);
+            console.log("Quiz history updated:", history);
+        }
+
+        function displayHistory() {
+            const history = loadQuizHistory();
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<p class="text-gray-600 text-center">No quiz history available.</p>';
+                return;
+            }
+            history.forEach((entry, index) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.classList.add('p-4', 'border', 'border-gray-200', 'rounded-md', 'bg-gray-50', 'shadow-sm');
+                entryDiv.innerHTML = `
+                    <p><strong>Quiz ${index + 1}:</strong> ${entry.prompt}</p>
+                    <p><strong>Questions Requested:</strong> ${entry.numQuestions}</p>
+                    <p><strong>Questions Generated:</strong> ${entry.totalQuestions}</p>
+                    <p><strong>Score:</strong> ${entry.score} / ${entry.totalQuestions}</p>
+                    <p><strong>Model:</strong> ${entry.model}</p>
+                    <p><strong>Completed:</strong> ${new Date(entry.timestamp).toLocaleString()}</p>
+                `;
+                historyList.appendChild(entryDiv);
+            });
+        }
+
+        // --- Dark Mode Toggle ---
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode);
+            toggleDarkModeButton.textContent = isDarkMode ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+        }
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            toggleDarkModeButton.textContent = 'Toggle Light Mode';
         }
 
         // --- Setup Page Logic ---
@@ -271,6 +373,18 @@
             hideError(setupError);
             hideError(customizationError);
         });
+
+        viewHistoryButton.addEventListener('click', () => {
+            showPage('history-page');
+            displayHistory();
+        });
+
+        backToCustomizationButton.addEventListener('click', () => {
+            showPage('customization-page');
+            hideError(customizationError);
+        });
+
+        toggleDarkModeButton.addEventListener('click', toggleDarkMode);
 
         prevButton.addEventListener('click', () => {
             if (currentQuestionIndex > 0) displayQuestion(--currentQuestionIndex);
@@ -411,18 +525,17 @@
                     console.error(`Error for question ${attemptNum} (Attempt ${attempt}):`, error);
                     if (attempt === MAX_RETRIES) {
                         console.warn(`Skipping question ${attemptNum} after retries due to: ${error.message}`);
-                        return null; // Return null to indicate failure
+                        return null;
                     }
                 }
             }
-            return null; // Fallback, should not reach here
+            return null;
         }
 
         async function generateQuestions(questionType, numQuestions, modelName) {
             const questions = [];
             let failedCount = 0;
 
-            // Initial generation loop
             for (let i = 0; i < numQuestions; i++) {
                 loadingText.textContent = `Generating question ${i + 1} of ${numQuestions}...`;
                 loadingIndicator.classList.remove('hidden-element');
@@ -435,7 +548,6 @@
                 }
             }
 
-            // Generate additional questions to make up for failures
             const remaining = numQuestions - questions.length;
             if (remaining > 0) {
                 loadingText.textContent = `Generating ${remaining} additional question${remaining > 1 ? 's' : ''} to reach ${numQuestions}...`;
@@ -490,7 +602,7 @@
             questionData.options.forEach((option, i) => {
                 const button = document.createElement('button');
                 button.textContent = option;
-                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'bg-white', 'hover:bg-gray-100', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
+                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
                 button.dataset.index = i;
                 button.onclick = () => selectAnswer(index, i);
                 optionsContainer.appendChild(button);
@@ -576,6 +688,7 @@
 
         function showResults() {
             finalScoreElement.textContent = `${score} / ${currentQuestions.length}`;
+            addQuizToHistory(quizSettings, score, currentQuestions.length);
             showPage('results-page');
         }
 
