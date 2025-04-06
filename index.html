@@ -6,7 +6,6 @@
     <title>AI PYQs Bot (OpenRouter)</title>
 
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         window.MathJax = {
@@ -27,47 +26,23 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/auto-render.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         .hidden-element { display: none; }
         .option-button { transition: background-color 0.2s ease, transform 0.1s ease, border-color 0.2s ease; }
-        .option-button:not(:disabled):hover { border-color: #9ca3af; }
+        .option-button:not(:disabled):hover { background-color: #e5e7eb; border-color: #9ca3af; }
         .option-button:not(:disabled):active { transform: scale(0.98); }
         .correct-answer { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
         .incorrect-answer { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         mjx-container { overflow-x: auto; overflow-y: hidden; display: block; margin: 0.5rem 0; padding: 2px; }
-        .spinner { border: 4px solid rgba(255, 255, 255, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; display: inline-block; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #question-text, #explanation-text, .option-button { word-wrap: break-word; overflow-wrap: break-word; }
-        canvas { max-width: 100%; height: auto; margin: 1rem 0; }
-
-        /* Light Mode (default) */
-        body { background-color: #f3f4f6; color: #1f2937; }
-        .container { background-color: #ffffff; }
-        .option-button:not(:disabled):hover { background-color: #e5e7eb; }
-        .option-button { background-color: #ffffff; border-color: #d1d5db; }
-
-        /* Dark Mode */
-        body.dark-mode { background-color: #1f2937; color: #d1d5db; }
-        .dark-mode .container { background-color: #374151; }
-        .dark-mode .option-button:not(:disabled):hover { background-color: #4b5563; }
-        .dark-mode .option-button { background-color: #4b5563; border-color: #6b7280; }
-        .dark-mode .bg-gradient-to-br { background: linear-gradient(to bottom right, #4b5563, #6b7280, #9ca3af); }
-        .dark-mode .bg-gray-200 { background-color: #4b5563; }
-        .dark-mode .bg-gray-50 { background-color: #6b7280; }
-        .dark-mode .border-gray-200 { border-color: #6b7280; }
-        .dark-mode .text-gray-600 { color: #9ca3af; }
-        .dark-mode .text-gray-700 { color: #d1d5db; }
-        .dark-mode .text-gray-800 { color: #f3f4f6; }
-        .dark-mode .text-gray-900 { color: #ffffff; }
-        .dark-mode .bg-blue-50 { background-color: #1e3a8a; }
-        .dark-mode .border-blue-200 { border-color: #3b82f6; }
-        .dark-mode .text-blue-800 { color: #93c5fd; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-4">
-    <div class="container mx-auto max-w-2xl w-full rounded-xl shadow-2xl overflow-hidden">
+    <div class="container mx-auto max-w-2xl w-full bg-white rounded-xl shadow-2xl overflow-hidden">
 
         <div id="setup-page" class="p-6 md:p-10 transition-all duration-500">
             <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">AI PYQs Bot Setup</h1>
@@ -94,16 +69,13 @@
         </div>
 
         <div id="customization-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-center text-gray-800">Customize Your Quiz</h1>
-                <button id="toggle-dark-mode" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300">Toggle Dark Mode</button>
-            </div>
+            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Customize Your Quiz</h1>
             <p class="text-center text-gray-600 mb-8">Describe the questions you need. Be specific!</p>
             <div class="space-y-5">
                 <div>
                     <label for="questionPrompt" class="block text-sm font-medium text-gray-700 mb-1">Question Prompt <span class="text-red-500">*</span></label>
-                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics) with graphs', 'Easy Thermodynamics questions for NEET UG with diagrams'" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs, and if graphs/images are needed.</p>
+                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Easy difficulty Thermodynamics questions for NEET UG'" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs if needed.</p>
                 </div>
                 <div>
                     <label for="numQuestions" class="block text-sm font-medium text-gray-700 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
@@ -111,7 +83,6 @@
                 </div>
                 <div id="customization-error" class="text-red-600 text-sm hidden-element font-medium text-center p-2 bg-red-50 rounded-md border border-red-200"></div>
                 <button id="start-quiz" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generate & Start Quiz</button>
-                <button id="view-history" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">View History</button>
                 <button id="back-to-setup" class="w-full mt-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">Back to API Setup</button>
             </div>
             <div id="loading-indicator" class="hidden-element mt-6 text-center">
@@ -137,7 +108,6 @@
             </div>
             <div id="question-container" class="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50 min-h-[120px] shadow-sm">
                 <p id="question-text" class="text-lg text-gray-900 leading-relaxed">Loading question...</p>
-                <div id="question-media" class="mt-2"></div>
             </div>
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
             <div id="feedback-container" class="min-h-[60px] mb-6">
@@ -145,7 +115,6 @@
                 <div id="explanation-area" class="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-800 hidden-element shadow-sm">
                     <strong class="text-blue-800 block mb-1 text-base">Explanation:</strong>
                     <div id="explanation-text" class="leading-relaxed"></div>
-                    <div id="explanation-media" class="mt-2"></div>
                 </div>
             </div>
             <div class="flex justify-between items-center pt-4 border-t border-gray-200">
@@ -164,14 +133,6 @@
                 <button id="new-quiz" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Start New Quiz</button>
             </div>
         </div>
-
-        <div id="history-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">Quiz History</h1>
-                <button id="back-to-customization" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">Back</button>
-            </div>
-            <div id="history-list" class="space-y-4"></div>
-        </div>
     </div>
 
     <script>
@@ -180,7 +141,6 @@
         const customizationPage = document.getElementById('customization-page');
         const quizPage = document.getElementById('quiz-page');
         const resultsPage = document.getElementById('results-page');
-        const historyPage = document.getElementById('history-page');
         const apiKeyInput = document.getElementById('apiKey');
         const baseUrlInput = document.getElementById('baseUrl');
         const openRouterModelInput = document.getElementById('openRouterModel');
@@ -190,17 +150,14 @@
         const numQuestionsInput = document.getElementById('numQuestions');
         const startQuizButton = document.getElementById('start-quiz');
         const backToSetupButton = document.getElementById('back-to-setup');
-        const viewHistoryButton = document.getElementById('view-history');
         const customizationError = document.getElementById('customization-error');
         const loadingIndicator = document.getElementById('loading-indicator');
         const loadingText = document.getElementById('loading-text');
         const questionTextElement = document.getElementById('question-text');
-        const questionMediaElement = document.getElementById('question-media');
         const optionsContainer = document.getElementById('options-container');
         const feedbackTextElement = document.getElementById('feedback-text');
         const explanationArea = document.getElementById('explanation-area');
         const explanationTextElement = document.getElementById('explanation-text');
-        const explanationMediaElement = document.getElementById('explanation-media');
         const prevButton = document.getElementById('prev-button');
         const nextButton = document.getElementById('next-button');
         const finishButton = document.getElementById('finish-button');
@@ -210,9 +167,6 @@
         const finalScoreElement = document.getElementById('final-score');
         const restartQuizButton = document.getElementById('restart-quiz');
         const newQuizButton = document.getElementById('new-quiz');
-        const toggleDarkModeButton = document.getElementById('toggle-dark-mode');
-        const historyList = document.getElementById('history-list');
-        const backToCustomizationButton = document.getElementById('back-to-customization');
 
         // --- State Variables ---
         let apiKey = '';
@@ -223,20 +177,20 @@
         let userAnswers = [];
         let score = 0;
         let quizSettings = { model: '', prompt: '', numQuestions: 0 };
-        let chartInstances = [];
 
         // --- Constants ---
         const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
         const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
         const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
-        const MAX_RETRIES = 1;
-        const RETRY_DELAY_MS = 2000;
-        const REQUEST_TIMEOUT_MS = 90000;
+        const MAX_RETRIES = 3; // Increased retries
+        const RETRY_DELAY_MS = 3000; // Increased delay between retries
+        const REQUEST_TIMEOUT_MS = 120000; // Increased to 2 minutes
+        const REQUEST_DELAY_MS = 1000; // Delay between requests to avoid rate limiting
         const QUIZ_HISTORY_KEY = 'quizHistory';
 
         // --- Helper Functions ---
         function showPage(pageId) {
-            [setupPage, customizationPage, quizPage, resultsPage, historyPage].forEach(page => {
+            [setupPage, customizationPage, quizPage, resultsPage].forEach(page => {
                 page.classList.toggle('hidden-element', page.id !== pageId);
             });
             window.scrollTo(0, 0);
@@ -266,29 +220,6 @@
             }
         }
 
-        function destroyCharts() {
-            chartInstances.forEach(chart => chart.destroy());
-            chartInstances = [];
-        }
-
-        function renderMedia(container, media) {
-            container.innerHTML = '';
-            if (!media) return;
-            if (media.imageUrl) {
-                const img = document.createElement('img');
-                img.src = media.imageUrl;
-                img.alt = "Question Image";
-                img.classList.add('max-w-full', 'h-auto', 'rounded-md');
-                container.appendChild(img);
-            } else if (media.graphData) {
-                const canvas = document.createElement('canvas');
-                container.appendChild(canvas);
-                const ctx = canvas.getContext('2d');
-                const chart = new Chart(ctx, media.graphData);
-                chartInstances.push(chart);
-            }
-        }
-
         // --- Local Storage Functions ---
         function loadQuizHistory() {
             const history = localStorage.getItem(QUIZ_HISTORY_KEY);
@@ -312,41 +243,6 @@
             history.push(quizEntry);
             saveQuizHistory(history);
             console.log("Quiz history updated:", history);
-        }
-
-        function displayHistory() {
-            const history = loadQuizHistory();
-            historyList.innerHTML = '';
-            if (history.length === 0) {
-                historyList.innerHTML = '<p class="text-gray-600 text-center">No quiz history available.</p>';
-                return;
-            }
-            history.forEach((entry, index) => {
-                const entryDiv = document.createElement('div');
-                entryDiv.classList.add('p-4', 'border', 'border-gray-200', 'rounded-md', 'bg-gray-50', 'shadow-sm');
-                entryDiv.innerHTML = `
-                    <p><strong>Quiz ${index + 1}:</strong> ${entry.prompt}</p>
-                    <p><strong>Questions Requested:</strong> ${entry.numQuestions}</p>
-                    <p><strong>Questions Generated:</strong> ${entry.totalQuestions}</p>
-                    <p><strong>Score:</strong> ${entry.score} / ${entry.totalQuestions}</p>
-                    <p><strong>Model:</strong> ${entry.model}</p>
-                    <p><strong>Completed:</strong> ${new Date(entry.timestamp).toLocaleString()}</p>
-                `;
-                historyList.appendChild(entryDiv);
-            });
-        }
-
-        // --- Dark Mode Toggle ---
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const isDarkMode = document.body.classList.contains('dark-mode');
-            localStorage.setItem('darkMode', isDarkMode);
-            toggleDarkModeButton.textContent = isDarkMode ? 'Toggle Light Mode' : 'Toggle Dark Mode';
-        }
-
-        if (localStorage.getItem('darkMode') === 'true') {
-            document.body.classList.add('dark-mode');
-            toggleDarkModeButton.textContent = 'Toggle Light Mode';
         }
 
         // --- Setup Page Logic ---
@@ -403,18 +299,6 @@
             hideError(customizationError);
         });
 
-        viewHistoryButton.addEventListener('click', () => {
-            showPage('history-page');
-            displayHistory();
-        });
-
-        backToCustomizationButton.addEventListener('click', () => {
-            showPage('customization-page');
-            hideError(customizationError);
-        });
-
-        toggleDarkModeButton.addEventListener('click', toggleDarkMode);
-
         prevButton.addEventListener('click', () => {
             if (currentQuestionIndex > 0) displayQuestion(--currentQuestionIndex);
         });
@@ -433,7 +317,6 @@
                 currentQuestions = [];
                 userAnswers = [];
                 score = 0;
-                destroyCharts();
                 hideError(customizationError);
             }
         });
@@ -467,14 +350,9 @@
                 - Exactly 4 options labeled A, B, C, D within an "options" object.
                 - The correct answer as "correctAnswerIndex" (0-based index).
                 - An explanation.
-                Optionally include:
-                - A "media" object with either:
-                  - "imageUrl": a URL to an image (e.g., "https://example.com/graph.png").
-                  - "graphData": a Chart.js configuration object (e.g., { type: "bar", data: { labels: ["A", "B"], datasets: [{ data: [1, 2] }] }, options: {} }).
-                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", "explanation", and optional "media" fields. 
+                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", and "explanation" fields. 
                 Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations where applicable. 
                 If PYQs are requested (e.g., JEE Main 2025), ensure the question is based on real previous year questions or closely mimics them. 
-                If graphs or images are requested in the prompt, include them in the "media" field where relevant (question or explanation).
                 Do not generate random unrelated questions. Ensure the JSON is complete and properly closed.
             `;
 
@@ -501,7 +379,7 @@
 
                 try {
                     if (attempt > 0) {
-                        console.log(`Retrying question ${attemptNum} (Attempt ${attempt}/${MAX_RETRIES})...`);
+                        console.log(`Retrying question ${attemptNum} (Attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
                         await delay(RETRY_DELAY_MS);
                     }
 
@@ -553,14 +431,13 @@
                         question: question.question,
                         options: [question.options.A, question.options.B, question.options.C, question.options.D].filter(opt => opt),
                         correctAnswerIndex: question.correctAnswerIndex,
-                        explanation: question.explanation,
-                        media: question.media || null
+                        explanation: question.explanation
                     };
                 } catch (error) {
                     lastError = error;
-                    console.error(`Error for question ${attemptNum} (Attempt ${attempt}):`, error);
+                    console.error(`Error for question ${attemptNum} (Attempt ${attempt + 1}):`, error);
                     if (attempt === MAX_RETRIES) {
-                        console.warn(`Skipping question ${attemptNum} after retries due to: ${error.message}`);
+                        console.warn(`Failed to generate question ${attemptNum} after ${MAX_RETRIES + 1} attempts: ${error.message}`);
                         return null;
                     }
                 }
@@ -570,39 +447,34 @@
 
         async function generateQuestions(questionType, numQuestions, modelName) {
             const questions = [];
+            let attemptNum = 0;
             let failedCount = 0;
 
-            for (let i = 0; i < numQuestions; i++) {
-                loadingText.textContent = `Generating question ${i + 1} of ${numQuestions}...`;
+            while (questions.length < numQuestions) {
+                attemptNum++;
+                loadingText.textContent = `Generating question ${questions.length + 1} of ${numQuestions} (Attempt ${attemptNum})...`;
                 loadingIndicator.classList.remove('hidden-element');
 
-                const question = await generateSingleQuestion(questionType, modelName, i + 1, numQuestions);
+                const question = await generateSingleQuestion(questionType, modelName, attemptNum, numQuestions);
                 if (question) {
                     questions.push(question);
+                    console.log(`Successfully generated question ${questions.length} of ${numQuestions}`);
                 } else {
                     failedCount++;
                 }
-            }
 
-            const remaining = numQuestions - questions.length;
-            if (remaining > 0) {
-                loadingText.textContent = `Generating ${remaining} additional question${remaining > 1 ? 's' : ''} to reach ${numQuestions}...`;
-                for (let i = 0; i < remaining; i++) {
-                    const extraQuestion = await generateSingleQuestion(questionType, modelName, numQuestions + i + 1, numQuestions);
-                    if (extraQuestion) {
-                        questions.push(extraQuestion);
-                    } else {
-                        failedCount++;
-                        console.warn(`Failed to generate additional question ${i + 1} of ${remaining}`);
-                    }
+                // Add delay between requests to avoid rate limiting
+                if (questions.length < numQuestions) {
+                    await delay(REQUEST_DELAY_MS);
                 }
             }
 
             loadingIndicator.classList.add('hidden-element');
-            if (questions.length < numQuestions) {
-                displayError(customizationError, `Generated only ${questions.length} of ${numQuestions} questions due to ${failedCount} failures. Check console for details.`);
+            if (failedCount > 0) {
+                console.log(`Total attempts: ${attemptNum}, Successful: ${questions.length}, Failed: ${failedCount}`);
+                displayError(customizationError, `Generated ${questions.length} questions after ${failedCount} failures. All requested questions generated successfully.`);
             }
-            return questions.length > 0 ? questions : [];
+            return questions;
         }
 
         async function startNewQuiz(prompt, num) {
@@ -620,7 +492,7 @@
                 showPage('quiz-page');
                 await displayQuestion(currentQuestionIndex);
             } else {
-                displayError(customizationError, "Failed to generate any questions. Check your prompt, model, or API key.");
+                displayError(customizationError, "Failed to generate any questions after multiple attempts. Check your prompt, model, or API key.");
             }
             loadingIndicator.classList.add('hidden-element');
             startQuizButton.disabled = false;
@@ -628,22 +500,17 @@
 
         async function displayQuestion(index) {
             if (index < 0 || index >= currentQuestions.length) return;
-            destroyCharts();
             const questionData = currentQuestions[index];
             questionTextElement.textContent = questionData.question;
-            questionMediaElement.innerHTML = '';
             optionsContainer.innerHTML = '';
             feedbackTextElement.textContent = '';
             explanationArea.classList.add('hidden-element');
             explanationTextElement.textContent = '';
-            explanationMediaElement.innerHTML = '';
-
-            renderMedia(questionMediaElement, questionData.media && questionData.media.question ? questionData.media.question : null);
 
             questionData.options.forEach((option, i) => {
                 const button = document.createElement('button');
                 button.textContent = option;
-                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
+                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'bg-white', 'hover:bg-gray-100', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
                 button.dataset.index = i;
                 button.onclick = () => selectAnswer(index, i);
                 optionsContainer.appendChild(button);
@@ -654,7 +521,7 @@
             progressTextElement.textContent = `Question ${currentQuestionNum} / ${totalQuestions}`;
             progressBarElement.style.width = `${(currentQuestionNum / totalQuestions) * 100}%`;
 
-            await typesetMathJax([questionTextElement, optionsContainer]);
+            await typesetMathJax([questionTextElementiwalContainer]);
 
             const answered = userAnswers.find(ans => ans.questionIndex === index);
             prevButton.disabled = index === 0;
@@ -692,7 +559,6 @@
             if (questionData.explanation) {
                 explanationTextElement.textContent = questionData.explanation;
                 explanationArea.classList.remove('hidden-element');
-                renderMedia(explanationMediaElement, questionData.media && questionData.media.explanation ? questionData.media.explanation : null);
                 await typesetMathJax([explanationTextElement]);
             } else {
                 explanationArea.classList.add('hidden-element');
@@ -731,7 +597,6 @@
         function showResults() {
             finalScoreElement.textContent = `${score} / ${currentQuestions.length}`;
             addQuizToHistory(quizSettings, score, currentQuestions.length);
-            destroyCharts();
             showPage('results-page');
         }
 
