@@ -3,1680 +3,562 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echoes of the Void</title>
+    <title>AI PYQs Bot (OpenRouter)</title>
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/auto-render.min.js"></script>
+
     <style>
-        /* --- Core Styles & Typewriter Font --- */
-        @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap'); /* Example typewriter font */
-
-        :root {
-            --font-typewriter: 'Special Elite', 'Courier New', Courier, monospace;
-            --color-text: #c0c0c0; /* Light grey for text */
-            --color-background: #1a1a1a; /* Very dark grey */
-            --color-foreground: #333333; /* Darker elements */
-            --color-accent: #8c1a1a; /* Dark, ominous red */
-            --color-interact: #a0a0a0; /* Highlight for interactables */
-            --color-hazard: #b35900; /* Orange/brown for hazards */
-            --color-ui-bg: rgba(20, 20, 20, 0.85);
-            --transition-speed: 0.3s;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--color-background);
-            color: var(--color-text);
-            font-family: var(--font-typewriter); /* Apply typewriter font globally */
-            overflow: hidden; /* Prevent scrollbars */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-size: 16px; /* Base font size */
-            line-height: 1.6;
-        }
-
-        #game-container {
-            position: relative;
-            width: 1024px; /* Adjust as needed */
-            height: 768px; /* Adjust as needed */
-            background-color: var(--color-foreground);
-            border: 2px solid var(--color-accent);
-            overflow: hidden; /* Crucial for containing game elements */
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        #game-world {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background-image: url('placeholder_background.png'); /* Placeholder - replace with actual */
-            background-size: cover;
-            background-position: center;
-            /* Placeholder - will be dynamically filled */
-        }
-
-        /* --- Player --- */
-        #player {
-            position: absolute;
-            width: 30px;
-            height: 50px;
-            background-color: #66b2ff; /* Temporary player color */
-            border: 1px solid var(--color-text);
-            /* bottom: 50px; /* Initial position set by JS */
-            /* left: 50px; /* Initial position set by JS */
-            z-index: 10;
-            transition: background-color 0.1s; /* For damage flash */
-        }
-
-        .player-damaged {
-            background-color: var(--color-accent) !important;
-        }
-
-        /* --- Environment Elements --- */
-        .platform {
-            position: absolute;
-            background-color: #555; /* Basic platform color */
-            border: 1px solid #444;
-            z-index: 1;
-            background-image: url('placeholder_metal_texture.png'); /* Placeholder */
-            background-size: cover;
-        }
-        .platform.decaying {
-            border-style: dashed;
-            opacity: 0.8;
-        }
-        .platform.conveyor { /* Example special platform */
-             background-color: #4a4a6a;
-        }
-
-        .hazard {
-            position: absolute;
-            background-color: var(--color-hazard);
-            z-index: 2;
-            /* Visuals for spikes, acid pools, etc. */
-        }
-        .hazard.spikes {
-             /* Basic spike visual */
-             clip-path: polygon(0% 100%, 10% 0%, 20% 100%, 30% 0%, 40% 100%, 50% 0%, 60% 100%, 70% 0%, 80% 100%, 90% 0%, 100% 100%);
-        }
-         .hazard.acid {
-             opacity: 0.7;
-             animation: acid-bubble 2s infinite ease-in-out;
-         }
-         @keyframes acid-bubble {
-             0%, 100% { transform: scaleY(1); }
-             50% { transform: scaleY(1.05); }
-         }
-
-
-        .resource-item {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: #4caf50; /* Green for resources */
-            border: 1px solid #388e3c;
-            border-radius: 50%;
-            z-index: 5;
-            cursor: pointer; /* Indicate interactability */
-            box-shadow: 0 0 5px #4caf50;
-            animation: pulse 1.5s infinite ease-in-out;
-        }
-         @keyframes pulse {
-             0%, 100% { transform: scale(1); opacity: 1; }
-             50% { transform: scale(1.1); opacity: 0.7; }
-         }
-         .resource-item[data-type="meds"] { background-color: #ffeb3b; border-color: #fbc02d; box-shadow: 0 0 5px #ffeb3b;}
-         .resource-item[data-type="ammo"] { background-color: #9e9e9e; border-color: #616161; box-shadow: 0 0 5px #9e9e9e;}
-
-
-        .interactive-object {
-            position: absolute;
-            border: 2px dashed var(--color-interact);
-            z-index: 4;
-            cursor: help; /* Indicate interactability */
-        }
-         .interactive-object.log-terminal {
-             width: 40px;
-             height: 60px;
-             background-color: rgba(0, 50, 100, 0.6); /* Dim blue screen */
-             animation: flicker 3s infinite alternate;
-         }
-         @keyframes flicker {
-            0%, 18%, 22%, 25%, 53%, 57%, 100% { box-shadow: 0 0 5px #66ceff, 0 0 10px #66ceff inset; }
-            20%, 24%, 55% { box-shadow: none; }
-        }
-
-
-        .survivor-npc {
-            position: absolute;
-            width: 30px;
-            height: 50px;
-            background-color: #bcaaa4; /* Neutral color for NPC */
-            border: 1px solid #8d6e63;
-            z-index: 9;
-        }
-        .survivor-npc.hostile {
-            background-color: #ef5350; /* Reddish for hostile */
-            border-color: #d32f2f;
-        }
-        .survivor-npc.traumatized {
-            animation: tremble 0.5s infinite;
-        }
-        @keyframes tremble {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-1px); }
-            75% { transform: translateX(1px); }
-        }
-
-        /* --- UI Overlay --- */
-        #ui-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Allow clicks through to game world by default */
-            z-index: 50;
-            font-family: var(--font-typewriter); /* Ensure UI uses the font */
-        }
-
-        .ui-panel {
-            position: absolute;
-            background-color: var(--color-ui-bg);
-            border: 1px solid var(--color-accent);
-            padding: 10px;
-            pointer-events: auto; /* Enable interaction for panels */
-            color: var(--color-text);
-            font-family: var(--font-typewriter);
-        }
-
-        #status-display {
-            top: 10px;
-            left: 10px;
-            padding: 5px 10px;
-            border-radius: 3px;
-        }
-        #status-display span { margin-right: 15px; }
-        #health-bar-container {
-            display: inline-block;
-            width: 100px;
-            height: 10px;
-            background-color: #555;
-            border: 1px solid var(--color-text);
-            margin-left: 5px;
-            vertical-align: middle;
-        }
-        #health-bar {
-            height: 100%;
-            width: 100%; /* Controlled by JS */
-            background-color: #4caf50; /* Green health */
-            transition: width 0.3s ease;
-        }
-        #health-bar.low { background-color: #ff9800; } /* Orange when low */
-        #health-bar.critical { background-color: #f44336; animation: pulse-red 1s infinite; } /* Red when critical */
-
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-
-        #narration-display {
-            bottom: 80px; /* Above dialogue */
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 700px;
-            text-align: center;
-            background: none;
-            border: none;
-            font-style: italic;
-            color: #bbb; /* Slightly dimmer for narration */
-            min-height: 1.6em; /* Prevent layout shift */
-            z-index: 51;
-             pointer-events: none; /* Narration shouldn't block clicks */
-        }
-
-        #dialogue-box {
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 800px;
-            height: 150px; /* Fixed height for dialogue area */
-            display: none; /* Hidden by default */
-            flex-direction: column;
-             z-index: 52;
-        }
-        #dialogue-speaker {
-            font-weight: bold;
-            color: var(--color-accent);
-            margin-bottom: 5px;
-        }
-        #dialogue-text {
-            flex-grow: 1;
-            overflow-y: auto; /* Scroll if text overflows */
-             white-space: pre-wrap; /* Respect newlines */
-            min-height: 3em; /* Ensure some space */
-        }
-        #choice-container {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .dialogue-choice {
-            background-color: var(--color-foreground);
-            border: 1px solid var(--color-accent);
-            color: var(--color-text);
-            padding: 5px 10px;
-            cursor: pointer;
-            text-align: left;
-            font-family: var(--font-typewriter);
-            transition: background-color var(--transition-speed), color var(--transition-speed);
-        }
-        .dialogue-choice:hover {
-            background-color: var(--color-accent);
-            color: var(--color-background);
-        }
-        .dialogue-choice:disabled {
-             opacity: 0.5;
-             cursor: not-allowed;
-             background-color: var(--color-foreground);
-             color: var(--color-text);
-         }
-
-        #interaction-prompt {
-            position: absolute;
-            bottom: 170px; /* Above dialogue box */
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--color-ui-bg);
-            padding: 5px 10px;
-            border: 1px solid var(--color-interact);
-            border-radius: 3px;
-            display: none; /* Hidden by default */
-            z-index: 55;
-            pointer-events: auto; /* Clickable prompt */
-            font-family: var(--font-typewriter);
-        }
-
-        #log-reader {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70%;
-            height: 70%;
-            max-width: 700px;
-            max-height: 500px;
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            z-index: 60;
-        }
-        #log-title {
-            font-weight: bold;
-            color: var(--color-accent);
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        #log-content {
-            flex-grow: 1;
-            overflow-y: auto;
-            white-space: pre-wrap; /* Preserve formatting */
-            border-top: 1px dashed var(--color-accent);
-            padding-top: 10px;
-            margin-bottom: 10px;
-        }
-        #log-close-button {
-            align-self: center;
-            padding: 5px 15px;
-            background-color: var(--color-foreground);
-            border: 1px solid var(--color-accent);
-            color: var(--color-text);
-            cursor: pointer;
-            font-family: var(--font-typewriter);
-        }
-         #log-close-button:hover {
-            background-color: var(--color-accent);
-            color: var(--color-background);
-         }
-
-        /* --- Psychological Effects --- */
-        .trauma-glitch {
-            animation: screen-glitch 0.3s infinite steps(2);
-        }
-        @keyframes screen-glitch {
-            0% { transform: translate(2px, 1px) skewX(-2deg); opacity: 0.8; }
-            25% { transform: translate(-1px, -1px) skewX(1deg); }
-            50% { transform: translate(-2px, 1px) skewX(2deg); opacity: 0.7; }
-            75% { transform: translate(1px, -1px) skewX(-1deg); }
-            100% { transform: translate(2px, 1px) skewX(-2deg); opacity: 0.8; }
-        }
-
-        .fear-vignette {
-            box-shadow: inset 0 0 100px 50px rgba(0, 0, 0, 0.7); /* Dark vignette */
-            animation: pulse-vignette 2s infinite ease-in-out;
-        }
-        @keyframes pulse-vignette {
-            0%, 100% { box-shadow: inset 0 0 100px 50px rgba(0, 0, 0, 0.7); }
-            50% { box-shadow: inset 0 0 120px 60px rgba(40, 0, 0, 0.8); } /* More intense, reddish */
-        }
-
-        #flashback-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(100, 0, 0, 0.3); /* Reddish overlay */
-            z-index: 100;
-            display: none; /* Hidden by default */
-            pointer-events: none;
-            animation: flash 0.5s ease-out;
-            opacity: 0;
-        }
-        @keyframes flash {
-            0% { opacity: 0.5; }
-            100% { opacity: 0; }
-        }
-         #flashback-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 1.5em;
-            text-align: center;
-            width: 80%;
-            text-shadow: 2px 2px 5px #000;
-             font-family: var(--font-typewriter);
-        }
-
-        /* Add more styles for specific elements, enemies, effects as needed */
-        /* Example: Derelict details */
-        .environmental-detail {
-             position: absolute;
-             pointer-events: none; /* Usually non-interactive */
-             z-index: 0; /* Behind platforms */
-         }
-        .detail-wires { /* Dangling wires */
-             width: 5px;
-             height: 80px;
-             background: linear-gradient(to bottom, #555, #222);
-             opacity: 0.6;
-         }
-        .detail-stain { /* Ominous stain */
-             width: 60px;
-             height: 40px;
-             background-color: rgba(100, 20, 20, 0.4); /* Dark red stain */
-             border-radius: 50% / 30%;
-             transform: rotate(15deg);
-         }
-
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .hidden-element { display: none; }
+        .option-button { transition: background-color 0.2s ease, transform 0.1s ease, border-color 0.2s ease; }
+        .option-button:not(:disabled):hover { background-color: #e5e7eb; border-color: #9ca3af; }
+        .option-button:not(:disabled):active { transform: scale(0.98); }
+        .correct-answer { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
+        .incorrect-answer { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        mjx-container { overflow-x: auto; overflow-y: hidden; display: block; margin: 0.5rem 0; padding: 2px; }
+        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #question-text, #explanation-text, .option-button { word-wrap: break-word; overflow-wrap: break-word; }
     </style>
 </head>
-<body>
-    <div id="game-container">
-        <div id="game-world">
-            <!-- Player element -->
-            <div id="player"></div>
+<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-4">
+    <div class="container mx-auto max-w-2xl w-full bg-white rounded-xl shadow-2xl overflow-hidden">
 
-            <!-- Game elements will be added dynamically by JavaScript -->
-            <!-- Example static elements for structure reference (remove/replace later) -->
-             <!-- <div class="platform" style="bottom: 0; left: 0; width: 1024px; height: 50px;"></div>
-            <div class="platform" style="bottom: 150px; left: 200px; width: 200px; height: 20px;"></div>
-            <div class="platform decaying" style="bottom: 250px; left: 500px; width: 150px; height: 15px;"></div>
-            <div class="hazard spikes" style="bottom: 50px; left: 400px; width: 100px; height: 20px;"></div>
-            <div class="resource-item" data-type="energy" style="bottom: 180px; left: 250px;"></div>
-            <div class="interactive-object log-terminal" data-logid="log_001" style="bottom: 50px; left: 600px;"></div>
-            <div class="survivor-npc" id="npc_kain" data-dialogue="kain_intro" style="bottom: 50px; left: 800px;"></div>
-             <div class="environmental-detail detail-wires" style="top: 0; left: 150px;"></div>
-             <div class="environmental-detail detail-stain" style="bottom: 50px; left: 300px;"></div> -->
+        <div id="setup-page" class="p-6 md:p-10 transition-all duration-500">
+            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">AI PYQs Bot Setup</h1>
+            <p class="text-center text-gray-600 mb-8">Enter your OpenRouter API details.</p>
+            <div class="space-y-5">
+                <div>
+                    <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-1">OpenRouter API Key <span class="text-red-500">*</span></label>
+                    <input type="password" id="apiKey" name="apiKey" placeholder="Enter your OpenRouter API Key (sk-or-...)" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <p class="mt-1 text-xs text-gray-500">Stored temporarily in browser session. <strong class="text-red-600">Handle with care.</strong></p>
+                </div>
+                <div>
+                    <label for="baseUrl" class="block text-sm font-medium text-gray-700 mb-1">Base URL (Optional)</label>
+                    <input type="url" id="baseUrl" name="baseUrl" placeholder="Default: https://openrouter.ai/api/v1" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <p class="mt-1 text-xs text-gray-500">Leave blank for default or enter custom endpoint/proxy.</p>
+                </div>
+                <div>
+                    <label for="openRouterModel" class="block text-sm font-medium text-gray-700 mb-1">OpenRouter Model Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="openRouterModel" name="openRouterModel" placeholder="e.g., xai/grok" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <p class="mt-1 text-xs text-gray-500">Specify the exact model to use via OpenRouter (see OpenRouter docs for available models).</p>
+                </div>
+                <div id="setup-error" class="text-red-600 text-sm hidden-element font-medium text-center p-2 bg-red-50 rounded-md border border-red-200"></div>
+                <button id="submit-setup" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Continue to Customization</button>
+            </div>
         </div>
 
-        <div id="ui-overlay">
-            <div id="status-display" class="ui-panel">
-                <span>Health: <div id="health-bar-container"><div id="health-bar"></div></div></span>
-                <span>Energy: <span id="energy-value">0</span></span>
-                <span>Meds: <span id="meds-value">0</span></span>
-                <span>Scrap: <span id="scrap-value">0</span></span>
-                 <!-- Add other status indicators as needed -->
+        <div id="customization-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
+            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Customize Your Quiz</h1>
+            <p class="text-center text-gray-600 mb-8">Describe the questions you need. Be specific!</p>
+            <div class="space-y-5">
+                <div>
+                    <label for="questionPrompt" class="block text-sm font-medium text-gray-700 mb-1">Question Prompt <span class="text-red-500">*</span></label>
+                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Easy difficulty Thermodynamics questions for NEET UG'" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs if needed.</p>
+                </div>
+                <div>
+                    <label for="numQuestions" class="block text-sm font-medium text-gray-700 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
+                    <input type="number" id="numQuestions" name="numQuestions" min="1" max="25" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                </div>
+                <div id="customization-error" class="text-red-600 text-sm hidden-element font-medium text-center p-2 bg-red-50 rounded-md border border-red-200"></div>
+                <button id="start-quiz" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generate & Start Quiz</button>
+                <button id="back-to-setup" class="w-full mt-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">Back to API Setup</button>
             </div>
-
-            <div id="narration-display">
-                <!-- Narration text appears here -->
+            <div id="loading-indicator" class="hidden-element mt-6 text-center">
+                <p id="loading-text" class="text-indigo-600 font-semibold mb-3">Generating questions...</p>
+                <div class="spinner mx-auto"></div>
+                <p class="text-sm text-gray-500 mt-3">This may take a few moments, please wait.</p>
             </div>
+        </div>
 
-            <div id="dialogue-box" class="ui-panel">
-                <div id="dialogue-speaker">Speaker Name</div>
-                <div id="dialogue-text">Dialogue text goes here...</div>
-                <div id="choice-container">
-                    <!-- Dialogue choices appear here -->
-                    <!-- <button class="dialogue-choice" data-choice="1">Choice 1</button> -->
+        <div id="quiz-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
+            <div class="flex justify-between items-center mb-5 border-b pb-3 border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">Quiz Time!</h2>
+                <button id="exit-quiz" title="Exit Quiz" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300 border border-red-200">Exit</button>
+            </div>
+            <div class="mb-6">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-medium text-indigo-700">Progress</span>
+                    <span id="progress-text" class="text-sm font-medium text-indigo-700">Question 1 / 5</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                    <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 20%"></div>
                 </div>
             </div>
-
-            <div id="interaction-prompt">
-                Press [E] to interact
+            <div id="question-container" class="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50 min-h-[120px] shadow-sm">
+                <p id="question-text" class="text-lg text-gray-900 leading-relaxed">Loading question...</p>
             </div>
-
-            <div id="log-reader" class="ui-panel">
-                <div id="log-title">Log Entry</div>
-                <div id="log-content">Log content appears here...</div>
-                <button id="log-close-button">Close [X]</button>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+            <div id="feedback-container" class="min-h-[60px] mb-6">
+                <p id="feedback-text" class="text-center font-semibold text-xl"></p>
+                <div id="explanation-area" class="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-800 hidden-element shadow-sm">
+                    <strong class="text-blue-800 block mb-1 text-base">Explanation:</strong>
+                    <div id="explanation-text" class="leading-relaxed"></div>
+                </div>
             </div>
+            <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                <button id="prev-button" disabled class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                <button id="next-button" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                <button id="finish-button" disabled class="hidden-element bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Finish Quiz</button>
+            </div>
+        </div>
 
-            <div id="flashback-overlay">
-                 <div id="flashback-text"></div>
-             </div>
-             <!-- Add Skill Tree, Inventory screens later -->
-             <!-- <div id="inventory-screen" class="ui-panel" style="display: none;">...</div> -->
-             <!-- <div id="skill-tree-screen" class="ui-panel" style="display: none;">...</div> -->
+        <div id="results-page" class="hidden-element p-8 md:p-12 rounded-lg text-center">
+            <svg class="w-16 h-16 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Quiz Completed!</h2>
+            <p class="text-xl text-gray-700 mb-8">Your Score: <span id="final-score" class="font-bold text-indigo-600 text-2xl">0 / 0</span></p>
+            <div class="space-y-3 md:space-y-0 md:space-x-4 flex flex-col md:flex-row justify-center">
+                <button id="restart-quiz" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Restart with Same Settings</button>
+                <button id="new-quiz" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Start New Quiz</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- Game Configuration ---
-        const CONFIG = {
-            GRAVITY: 0.6,
-            PLAYER_SPEED: 4,
-            JUMP_FORCE: 12,
-            TERMINAL_VELOCITY: 15,
-            FRICTION: 0.8,
-            INTERACTION_RANGE: 50, // Pixels
-            TYPEWRITER_SPEED: 30, // Milliseconds per character
-            NPC_DIALOGUE_RANGE: 70,
-            PLAYER_MAX_HEALTH: 100,
-            HAZARD_DAMAGE: 10,
-            DEBUG_MODE: false, // Set to true for collision boxes etc.
-        };
-
-        // --- Game State ---
-        let gameState = {
-            player: {
-                x: 100,
-                y: 650, // Start near bottom
-                vx: 0,
-                vy: 0,
-                width: 30,
-                height: 50,
-                isOnGround: false,
-                health: CONFIG.PLAYER_MAX_HEALTH,
-                facingRight: true,
-                isInvincible: false, // For damage cooldown
-                invincibleTimer: 0,
-                interactionTarget: null, // Element player can interact with
-                dialogueTarget: null, // NPC player can talk to
-            },
-            resources: {
-                energy: 0,
-                meds: 1, // Start with one medkit maybe
-                scrap: 0,
-                ammo: 0,
-            },
-            level: {
-                elements: [], // Platforms, hazards, items, NPCs, etc. loaded here
-                currentLevelId: 'derelict_station_entry', // Identifier for the current area
-            },
-            input: {
-                left: false,
-                right: false,
-                jump: false,
-                interact: false,
-            },
-            flags: { // For story choices and events
-                met_kain: false,
-                helped_kain: null, // null = undecided, true = helped, false = betrayed/ignored
-                read_log_001: false,
-                unlocked_hacking: false,
-                // Add more flags as needed
-            },
-            gamePaused: false, // For menus, dialogue, log reading
-            currentDialogue: null, // Holds the active dialogue object
-            currentLog: null, // Holds the active log object
-            psychologicalState: {
-                traumaLevel: 0, // 0-100? Affects triggers
-                isHallucinating: false,
-                activeEffects: [], // e.g., ['glitch', 'vignette']
-            },
-            // Add more state sections: inventory, skills, quests etc.
-        };
-
         // --- DOM Elements ---
-        const gameContainer = document.getElementById('game-container');
-        const gameWorld = document.getElementById('game-world');
-        const playerElement = document.getElementById('player');
-        const uiOverlay = document.getElementById('ui-overlay');
-        const healthBar = document.getElementById('health-bar');
-        const healthBarContainer = document.getElementById('health-bar-container');
-        const energyValue = document.getElementById('energy-value');
-        const medsValue = document.getElementById('meds-value');
-        const scrapValue = document.getElementById('scrap-value');
-        const narrationDisplay = document.getElementById('narration-display');
-        const dialogueBox = document.getElementById('dialogue-box');
-        const dialogueSpeaker = document.getElementById('dialogue-speaker');
-        const dialogueText = document.getElementById('dialogue-text');
-        const choiceContainer = document.getElementById('choice-container');
-        const interactionPrompt = document.getElementById('interaction-prompt');
-        const logReader = document.getElementById('log-reader');
-        const logTitle = document.getElementById('log-title');
-        const logContent = document.getElementById('log-content');
-        const logCloseButton = document.getElementById('log-close-button');
-        const flashbackOverlay = document.getElementById('flashback-overlay');
-        const flashbackText = document.getElementById('flashback-text');
+        const setupPage = document.getElementById('setup-page');
+        const customizationPage = document.getElementById('customization-page');
+        const quizPage = document.getElementById('quiz-page');
+        const resultsPage = document.getElementById('results-page');
+        const apiKeyInput = document.getElementById('apiKey');
+        const baseUrlInput = document.getElementById('baseUrl');
+        const openRouterModelInput = document.getElementById('openRouterModel');
+        const submitSetupButton = document.getElementById('submit-setup');
+        const setupError = document.getElementById('setup-error');
+        const questionPromptInput = document.getElementById('questionPrompt');
+        const numQuestionsInput = document.getElementById('numQuestions');
+        const startQuizButton = document.getElementById('start-quiz');
+        const backToSetupButton = document.getElementById('back-to-setup');
+        const customizationError = document.getElementById('customization-error');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const loadingText = document.getElementById('loading-text');
+        const questionTextElement = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackTextElement = document.getElementById('feedback-text');
+        const explanationArea = document.getElementById('explanation-area');
+        const explanationTextElement = document.getElementById('explanation-text');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const finishButton = document.getElementById('finish-button');
+        const exitQuizButton = document.getElementById('exit-quiz');
+        const progressTextElement = document.getElementById('progress-text');
+        const progressBarElement = document.getElementById('progress-bar');
+        const finalScoreElement = document.getElementById('final-score');
+        const restartQuizButton = document.getElementById('restart-quiz');
+        const newQuizButton = document.getElementById('new-quiz');
 
-        // --- Utility Functions ---
-        function updateElementPosition(element, x, y) {
-            element.style.left = `${x}px`;
-            element.style.bottom = `${y}px`; // Use bottom for easier floor reference
+        // --- State Variables ---
+        let apiKey = '';
+        let baseUrl = '';
+        let modelName = '';
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let score = 0;
+        let quizSettings = { model: '', prompt: '', numQuestions: 0 };
+
+        // --- Constants ---
+        const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
+        const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
+        const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
+        const MAX_RETRIES = 1;
+        const RETRY_DELAY_MS = 1000; // Reduced from 2000ms
+        const REQUEST_TIMEOUT_MS = 30000; // Reduced from 90000ms
+
+        // --- Helper Functions ---
+        function showPage(pageId) {
+            [setupPage, customizationPage, quizPage, resultsPage].forEach(page => {
+                page.classList.toggle('hidden-element', page.id !== pageId);
+            });
+            window.scrollTo(0, 0);
         }
 
-        function checkCollision(rect1, rect2) {
-             // Simple AABB collision detection
-             // Assumes rects have { x, y, width, height } where y is bottom coordinate
-             // Adjust calculation based on how x,y are defined (top-left vs bottom-left)
-            const top1 = rect1.y + rect1.height;
-            const bottom1 = rect1.y;
-            const left1 = rect1.x;
-            const right1 = rect1.x + rect1.width;
-
-            const top2 = rect2.y + rect2.height;
-            const bottom2 = rect2.y;
-            const left2 = rect2.x;
-            const right2 = rect2.x + rect2.width;
-
-            return (
-                left1 < right2 &&
-                right1 > left2 &&
-                bottom1 < top2 &&
-                top1 > bottom2
-            );
+        function displayError(element, message) {
+            element.textContent = message;
+            element.classList.remove('hidden-element');
         }
 
-        function getElementRect(element) {
-            // Gets rect relative to game world, assuming bottom/left positioning
-            const style = window.getComputedStyle(element);
-            return {
-                element: element, // Keep reference to the element itself
-                x: parseFloat(style.left || 0),
-                y: parseFloat(style.bottom || 0),
-                width: parseFloat(style.width || 0),
-                height: parseFloat(style.height || 0),
-                // Add type or other properties needed for collision handling
-                 type: element.classList.contains('platform') ? 'platform' :
-                       element.classList.contains('hazard') ? 'hazard' :
-                       element.classList.contains('resource-item') ? 'resource' :
-                       element.classList.contains('interactive-object') ? 'interactive' :
-                       element.classList.contains('survivor-npc') ? 'npc' : 'other',
-                 isDecaying: element.classList.contains('decaying'), // Example specific property
-                 logId: element.dataset.logid,
-                 dialogueId: element.dataset.dialogue,
-                 npcId: element.id,
-                 resourceType: element.dataset.type,
-            };
-        }
-
-        let typeWriterInterval = null;
-        function typeWriter(element, text, speed, callback = null) {
-            clearTimeout(typeWriterInterval); // Clear previous typewriter if running
+        function hideError(element) {
             element.textContent = '';
-            let i = 0;
-            function type() {
-                if (i < text.length) {
-                    element.textContent += text.charAt(i);
-                    i++;
-                    typeWriterInterval = setTimeout(type, speed);
-                } else {
-                    if (callback) callback();
+            element.classList.add('hidden-element');
+        }
+
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function typesetMathJax(elements) {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                try {
+                    return await window.MathJax.typesetPromise(elements);
+                } catch (mathJaxError) {
+                    console.error("MathJax typesetting error:", mathJaxError);
                 }
-            }
-            type();
-        }
-
-         function skipTypewriter(element, fullText) {
-             clearTimeout(typeWriterInterval);
-             element.textContent = fullText;
-         }
-
-        function showNarration(text, duration = 5000) {
-            typeWriter(narrationDisplay, text, CONFIG.TYPEWRITER_SPEED / 2); // Faster narration
-            setTimeout(() => {
-                if (narrationDisplay.textContent === text) { // Only clear if it wasn't replaced
-                     narrationDisplay.textContent = '';
-                }
-            }, duration);
-        }
-
-        function triggerFlashback(text, duration = 1500) {
-             flashbackText.textContent = text;
-             flashbackOverlay.style.display = 'block';
-             flashbackOverlay.style.opacity = '1'; // Start visible
-             // Manually trigger reflow for animation restart
-             flashbackOverlay. TBD // Not the best way, but works for simple cases
-             flashbackOverlay.style.animation = 'none';
-             flashbackOverlay.offsetHeight; // Trigger reflow
-             flashbackOverlay.style.animation = `flash ${duration / 1000}s ease-out`;
-
-             setTimeout(() => {
-                 flashbackOverlay.style.display = 'none';
-             }, duration);
-
-             // Also maybe apply a temporary psychological effect
-             applyPsychologicalEffect('glitch', duration);
-             playSound('flashback_sound'); // Play a sound effect
-        }
-
-        function applyPsychologicalEffect(effectType, duration) {
-            if (!gameState.psychologicalState.activeEffects.includes(effectType)) {
-                gameContainer.classList.add(`trauma-${effectType}`); // Add CSS class
-                gameState.psychologicalState.activeEffects.push(effectType);
-                setTimeout(() => {
-                    gameContainer.classList.remove(`trauma-${effectType}`);
-                    gameState.psychologicalState.activeEffects = gameState.psychologicalState.activeEffects.filter(e => e !== effectType);
-                }, duration);
+            } else {
+                console.warn("MathJax not ready.");
             }
         }
 
-        function takeDamage(amount) {
-            if (gameState.player.isInvincible) return;
-
-            gameState.player.health -= amount;
-            updateHealthUI();
-            playSound('player_hurt'); // Play hurt sound
-
-            if (gameState.player.health <= 0) {
-                gameState.player.health = 0;
-                gameOver("Succumbed to injuries...");
-                return;
+        // --- Setup Page Logic ---
+        submitSetupButton.addEventListener('click', () => {
+            hideError(setupError);
+            let isValid = true;
+            const key = apiKeyInput.value.trim();
+            if (!key) {
+                displayError(setupError, "OpenRouter API Key is required.");
+                apiKeyInput.focus();
+                isValid = false;
+            } else {
+                apiKey = key;
             }
-
-            // Apply brief invincibility and visual feedback
-            playerElement.classList.add('player-damaged');
-            gameState.player.isInvincible = true;
-            gameState.player.invincibleTimer = 500; // 0.5 seconds invincibility
-
-            setTimeout(() => {
-                 playerElement.classList.remove('player-damaged');
-            }, 100); // Quick flash
-
-            // Maybe trigger psychological effect on taking damage
-             if (gameState.player.health < CONFIG.PLAYER_MAX_HEALTH * 0.3) {
-                 applyPsychologicalEffect('vignette', 3000);
-             }
-        }
-
-        function updateHealthUI() {
-            const healthPercent = (gameState.player.health / CONFIG.PLAYER_MAX_HEALTH) * 100;
-            healthBar.style.width = `${healthPercent}%`;
-
-            healthBar.classList.remove('low', 'critical');
-            if (healthPercent <= 25) {
-                healthBar.classList.add('critical');
-            } else if (healthPercent <= 50) {
-                healthBar.classList.add('low');
+            const orModel = openRouterModelInput.value.trim();
+            if (!orModel) {
+                displayError(setupError, "OpenRouter Model Name is required.");
+                openRouterModelInput.focus();
+                isValid = false;
+            } else {
+                modelName = orModel;
             }
-        }
-
-        function updateResourceUI() {
-            energyValue.textContent = gameState.resources.energy;
-            medsValue.textContent = gameState.resources.meds;
-            scrapValue.textContent = gameState.resources.scrap;
-            // Update other resources...
-        }
-
-        function showInteractionPrompt(text, targetElement) {
-            interactionPrompt.textContent = text;
-            interactionPrompt.style.display = 'block';
-            gameState.player.interactionTarget = targetElement; // Store what we can interact with
-        }
-
-        function hideInteractionPrompt() {
-            interactionPrompt.style.display = 'none';
-            gameState.player.interactionTarget = null;
-        }
-
-        function gameOver(message) {
-            gameState.gamePaused = true;
-            console.log("GAME OVER:", message);
-            // In a real game, show a game over screen, offer retry/quit
-            // For now, just stop the loop and show message
-            showNarration(`GAME OVER: ${message}`, 10000);
-            // Freeze player visually (optional)
-             playerElement.style.backgroundColor = '#444';
-        }
-
-        // --- Sound Management (Basic) ---
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const sounds = { // Preload or define sound paths here
-            jump: 'path/to/jump.wav',
-            land: 'path/to/land.wav',
-            collect_resource: 'path/to/collect.wav',
-            player_hurt: 'path/to/hurt.wav',
-            terminal_activate: 'path/to/terminal.wav',
-            dialogue_advance: 'path/to/type_beep.wav', // Subtle beep per choice/advance
-            flashback_sound: 'path/to/flashback_sfx.wav',
-            ambient_drone: 'path/to/ambient_drone.mp3', // Looping background
-            // Add more sounds: footsteps, weapon fire, enemy noises, UI clicks...
-        };
-        let ambientSoundSource = null;
-
-         function playSound(soundName, loop = false, volume = 0.5) {
-            if (!sounds[soundName] || !audioContext) return;
-
-            // Basic implementation: Fetch and play
-            // A real implementation would use buffer loading and reuse sources
-             // For simplicity here, we create new Audio objects (less efficient)
-            try {
-                const audio = new Audio(sounds[soundName]); // Use actual paths!
-                 audio.volume = volume;
-                 if (loop) {
-                     audio.loop = true;
-                     // Special handling for looping ambient sound
-                     if (soundName === 'ambient_drone') {
-                         if (ambientSoundSource) ambientSoundSource.stop(); // Stop previous ambient
-                         ambientSoundSource = audio; // Store reference
-                     }
-                 }
-                 audio.play().catch(e => console.warn(`Audio play failed for ${soundName}:`, e)); // Handle autoplay restrictions
-            } catch (e) {
-                 console.error(`Error playing sound ${soundName}:`, e);
+            baseUrl = baseUrlInput.value.trim() || OPENROUTER_DEFAULT_BASE_URL;
+            if (isValid) {
+                console.log("Setup Complete:", { model: modelName, apiKey: '***', baseUrl });
+                showPage('customization-page');
             }
-         }
+        });
 
-         // Start ambient sound after first user interaction (common browser requirement)
-         function startAmbientSound() {
-             if (!ambientSoundSource && sounds.ambient_drone) {
-                 playSound('ambient_drone', true, 0.3); // Start ambient loop at low volume
-             }
-         }
-         document.body.addEventListener('click', startAmbientSound, { once: true });
-         document.body.addEventListener('keydown', startAmbientSound, { once: true });
-
-
-        // --- Content Definitions (Logs, Dialogue) ---
-        const LOG_DATA = {
-            "log_001": {
-                title: "Maintenance Log 7B - Sector Gamma",
-                content: `Timestamp: Cycle 893.44\nStatus: Nominal... mostly.\n\nAnother power fluctuation in grid 3. Diagnostics show... nothing. Again. It's like the station itself is sighing. Or screaming.\n\nKeep hearing things in the vents. Scrabbling. Probably just space-rats, but... after what happened on Cygnus X-1... everyone's jumpy.\n\nSecurity Chief insists it's 'residual atmospheric settling'. Right. And I'm the Void Emperor.\n\nNote: Welding torch unit #4 is acting up. Might need to scavenge parts if it fails completely. Hope it doesn't come to that.`
-            },
-            "log_002": {
-                 title: "Personal Entry - Dr. Aris Thorne",
-                 content: `Date: [ILLEGIBLE]\n\nIt wasn't supposed to be like this. The Concord... eternal, they said. Shining beacon. Now... just echoes and dust.\n\nThe signal... the 'Harmony'... it promised unity. Integration. Transcendence.\n\nInstead, it brought... chaos. Silence first, then the screaming. Saw things... people turning... Not monsters. Worse. Desperate. The mask of civilization stripped away in an instant.\n\nI sealed the lab. Maybe... maybe the samples are contained. But the knowledge? The potential? It's out there. In the silence.\n\nElara... if you find this... I hope you don't remember. Remembering is the real curse.`
-             }
-            // Add many more logs
-        };
-
-        const DIALOGUE_DATA = {
-            "kain_intro": {
-                speaker: "Kain",
-                lines: [
-                    { text: "H-hold it! Don't... don't shoot! Are you... real?" },
-                    { text: "Another scavenger? Or... something else? Hard to tell these days. Everything blurs." },
-                    { text: "Name's Kain. Been stuck in this rust bucket since... well, since everything went dark." },
-                    { text: "You look lost. Like you woke up in hell and haven't had your morning synth-coffee.", choices: ["ask_who_he_is", "ask_about_station", "remain_silent"] }
-                ]
-            },
-            "kain_who": {
-                speaker: "Kain",
-                lines: [
-                    { text: "Me? Just a survivor. Like you, maybe. Used to be... doesn't matter now. We are what we do to stay breathing.", triggerFlag: "met_kain" }, // Set flag when this node is reached
-                    { text: "Watch your back out here. Not everyone you meet is looking for a friendly chat. Some... they've lost it. Or worse, found something terrible in its place.", next: "kain_warning" }
-                ]
-            },
-            "kain_station": {
-                speaker: "Kain",
-                lines: [
-                     { text: "This place? Used to be a major transit hub. 'Starlight Nexus'. Now? It's a tomb. Full of ghosts made of scrap and bad memories." },
-                     { text: "Something happened. Fast. One moment, comms were buzzing, next... silence. Then... the panic. People fighting over escape pods, rations... each other." },
-                     { text: "There are supplies deeper in, past the old security checkpoint. But it's dangerous. Automated defenses might still be active. And... others.", next: "kain_warning" }
-                 ]
-            },
-             "kain_silent": {
-                 speaker: "Kain",
-                 lines: [
-                     { text: "Not talkative, huh? Smart. Trust is a luxury we can't afford anymore." },
-                     { text: "Fine. Keep your secrets. Just... try not to bleed on my floor plating. It stains.", next: "kain_warning" }
-                 ]
-             },
-             "kain_warning": {
-                 speaker: "Kain",
-                 lines: [
-                     { text: "Look, I saw you eyeing that medkit earlier. I need it. Badly. Got tangled with some... automated cleaner drone. Nasty business." },
-                      { text: "Tell you what. You help me patch this up... maybe I know a way through the old maintenance tunnels. Safer than the main corridors.", choices: ["kain_help", "kain_refuse", "kain_threaten"] } // MORAL CHOICE
-                  ]
-             },
-             "kain_decision_help": {
-                speaker: "Kain",
-                lines: [
-                    { text: "You... you're helping? Didn't expect that. Thanks. Here... *He winces* ...apply it there.", triggerFlag: "helped_kain:true" }, // Set flag
-                    { text: "Okay... okay. Better. The tunnel access is back the way you came, look for a loose panel near the flickering emergency light. Code is... 4-8-1-5. Don't tell anyone I told you.", end: true } // Dialogue ends
-                ]
-            },
-             "kain_decision_refuse": {
-                 speaker: "Kain",
-                 lines: [
-                     { text: "No? Just like that? Heh. Should have known. Everyone's out for themselves.", triggerFlag: "helped_kain:false" }, // Set flag
-                     { text: "*He glares, clutching his side.* Fine. Go on. Hope you find what you're looking for. But don't expect any favors if our paths cross again.", end: true, changeNpcState: { npcId: "npc_kain", hostile: true, class: 'hostile' } } // Make him hostile for future encounters
-                 ]
-             },
-             "kain_decision_threaten": { // Example of a darker path
-                  speaker: "Kain",
-                  lines: [
-                      { text: "Threaten me? After I offer help? You're one of *them*, aren't you?", triggerFlag: "helped_kain:false" }, // Set flag
-                      { text: "*He suddenly pulls out a makeshift shiv.* You want what little I have? You'll have to take it!", end: true, triggerCombat: "npc_kain" } // End dialogue, trigger combat
-                  ]
-              },
-            // Add more dialogues for other characters, branching paths etc.
-        };
-
-        // --- Input Handling ---
-        function handleKeyDown(event) {
-             startAmbientSound(); // Ensure ambient sound starts on first keydown too
-
-            if (gameState.gamePaused && !gameState.currentDialogue && !gameState.currentLog) return; // Ignore movement if paused unless in specific UI
-
-            if (gameState.currentDialogue) {
-                 // Allow skipping typewriter with Enter/Space/E in dialogue
-                 if (event.key === 'Enter' || event.key === ' ' || event.key.toLowerCase() === 'e') {
-                     // If choices are visible, don't skip, let choice handler work
-                      if (choiceContainer.children.length === 0) {
-                          skipTypewriter(dialogueText, gameState.currentDialogue.currentLineFullText);
-                      }
-                 }
-                 // Allow closing dialogue with Escape if no choices pending
-                  else if (event.key === 'Escape' && gameState.currentDialogue.canEnd) {
-                     endDialogue();
-                  }
-                 return; // Don't process movement keys during dialogue
-             }
-
-            if (gameState.currentLog) {
-                if (event.key === 'Escape' || event.key.toLowerCase() === 'x') {
-                    closeLogReader();
-                }
-                 return; // Don't process movement keys while reading log
-             }
-
-            switch (event.key.toLowerCase()) {
-                case 'a':
-                case 'arrowleft':
-                    gameState.input.left = true;
-                    break;
-                case 'd':
-                case 'arrowright':
-                    gameState.input.right = true;
-                    break;
-                case 'w':
-                case 'arrowup':
-                case ' ': // Space for jump
-                    gameState.input.jump = true;
-                    break;
-                case 'e': // Interaction key
-                    gameState.input.interact = true;
-                    break;
-                 case 'h': // Example: Use Medkit
-                     useMedkit();
-                     break;
-                 case 'escape': // Pause Menu / Back
-                     // togglePauseMenu(); // Implement pause menu function later
-                     break;
-                 // Add keys for attack, inventory, skills etc.
+        // --- Customization and Quiz Logic ---
+        startQuizButton.addEventListener('click', () => {
+            hideError(customizationError);
+            const prompt = questionPromptInput.value.trim();
+            const num = parseInt(numQuestionsInput.value, 10);
+            let isValid = true;
+            if (!prompt) {
+                displayError(customizationError, "Please enter a question prompt.");
+                questionPromptInput.focus();
+                isValid = false;
             }
-        }
-
-        function handleKeyUp(event) {
-            switch (event.key.toLowerCase()) {
-                case 'a':
-                case 'arrowleft':
-                    gameState.input.left = false;
-                    break;
-                case 'd':
-                case 'arrowright':
-                    gameState.input.right = false;
-                    break;
-                case 'w':
-                case 'arrowup':
-                case ' ':
-                    gameState.input.jump = false;
-                    break;
-                case 'e':
-                    gameState.input.interact = false;
-                    break;
+            if (isNaN(num) || num < 1 || num > 25) {
+                displayError(customizationError, "Number of questions must be between 1 and 25.");
+                numQuestionsInput.focus();
+                isValid = false;
             }
-        }
+            if (isValid) {
+                startNewQuiz(prompt, num);
+            }
+        });
 
-        // --- Interaction Logic ---
-        function handleInteraction() {
-             if (gameState.input.interact && !gameState.gamePaused) {
-                 // Check for NPC interaction first
-                 if (gameState.player.dialogueTarget) {
-                     const npcData = getElementRect(gameState.player.dialogueTarget);
-                     if (npcData.dialogueId && DIALOGUE_DATA[npcData.dialogueId]) {
-                         startDialogue(npcData.dialogueId, npcData.npcId);
-                         hideInteractionPrompt(); // Hide prompt once dialogue starts
-                         gameState.player.dialogueTarget = null; // Clear target after starting
-                         gameState.input.interact = false; // Consume interact input
-                     }
-                 }
-                 // Then check for object interaction
-                 else if (gameState.player.interactionTarget) {
-                    const targetData = getElementRect(gameState.player.interactionTarget);
-                    if (targetData.type === 'interactive' && targetData.logId) {
-                        openLogReader(targetData.logId);
-                        playSound('terminal_activate');
-                        hideInteractionPrompt();
-                        gameState.player.interactionTarget = null; // Clear target after interaction
-                        gameState.input.interact = false; // Consume interact input
-                    } else if (targetData.type === 'resource') {
-                         collectResource(gameState.player.interactionTarget);
-                         hideInteractionPrompt();
-                         gameState.player.interactionTarget = null;
-                         gameState.input.interact = false;
+        backToSetupButton.addEventListener('click', () => {
+            showPage('setup-page');
+            hideError(setupError);
+            hideError(customizationError);
+        });
+
+        prevButton.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) displayQuestion(--currentQuestionIndex);
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (currentQuestionIndex < currentQuestions.length - 1) displayQuestion(++currentQuestionIndex);
+        });
+
+        finishButton.addEventListener('click', () => {
+            if (currentQuestionIndex === currentQuestions.length - 1) showResults();
+        });
+
+        exitQuizButton.addEventListener('click', () => {
+            if (confirm("Exit quiz? Progress will be lost.")) {
+                showPage('customization-page');
+                currentQuestions = [];
+                userAnswers = [];
+                score = 0;
+                hideError(customizationError);
+            }
+        });
+
+        restartQuizButton.addEventListener('click', () => {
+            if (quizSettings.prompt && quizSettings.numQuestions > 0) {
+                modelName = quizSettings.model;
+                openRouterModelInput.value = modelName;
+                questionPromptInput.value = quizSettings.prompt;
+                numQuestionsInput.value = quizSettings.numQuestions;
+                showPage('customization-page');
+                setTimeout(() => startNewQuiz(quizSettings.prompt, quizSettings.numQuestions), 50);
+            } else {
+                console.error("Cannot restart, previous settings missing.");
+                showPage('customization-page');
+            }
+        });
+
+        newQuizButton.addEventListener('click', () => {
+            showPage('customization-page');
+            hideError(customizationError);
+        });
+
+        // --- API and Question Generation ---
+        async function generateQuestions(questionType, numQuestions, modelName) {
+            const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
+            const questions = [];
+
+            loadingText.textContent = `Generating ${numQuestions} questions...`;
+            loadingIndicator.classList.remove('hidden-element');
+
+            const prompt = `
+                Generate ${numQuestions} multiple-choice questions (MCQs) based on: "${questionType}". 
+                Each question must have:
+                - A question stem (e.g., similar to JEE Main 2025 PYQs like 'The position of a particle moving on x-axis is given by x(t) = A sin t + B cos^2 t + C t^2 + D, where t is time. The dimension of ABC/D is').
+                - Exactly 4 options labeled A, B, C, D within an "options" object.
+                - The correct answer as "correctAnswerIndex" (0-based index).
+                - An explanation.
+                Return the response as a valid JSON array of objects, where each object has "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", and "explanation" fields. 
+                Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations where applicable. 
+                If PYQs are requested (e.g., JEE Main 2025), ensure questions are based on real previous year questions or closely mimic them. 
+                Ensure the JSON is complete and properly closed.
+            `;
+
+            const payload = {
+                model: modelName,
+                messages: [
+                    { role: "system", content: "You are an expert AI assistant generating educational MCQs in strict JSON format." },
+                    { role: "user", content: prompt }
+                ],
+                temperature: 0.5,
+                stream: false
+            };
+            const headers = {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': OPENROUTER_REFERER_URL,
+                'X-Title': OPENROUTER_APP_NAME
+            };
+
+            let lastError = null;
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+                try {
+                    if (attempt > 0) {
+                        console.log(`Retrying request (Attempt ${attempt}/${MAX_RETRIES})...`);
+                        await delay(RETRY_DELAY_MS);
                     }
-                    // Add more interaction types: doors, switches, crafting stations...
-                 }
-             }
-             // Reset interact flag if button released or interaction happened
-             if (!gameState.input.interact) {
-                // This logic might need refinement - ensures interact is consumed per frame
-             }
-         }
 
-        function collectResource(resourceElement) {
-             const resourceData = getElementRect(resourceElement);
-             if (resourceData.type === 'resource' && resourceData.resourceType) {
-                 gameState.resources[resourceData.resourceType]++;
-                 updateResourceUI();
-                 playSound('collect_resource');
-                 // Maybe show a "+1 [Type]" floating text
-                 resourceElement.remove(); // Remove from world
-                 // Update the level elements array
-                  gameState.level.elements = gameState.level.elements.filter(el => el.element !== resourceElement);
-             }
-         }
-
-        function useMedkit() {
-             if (gameState.resources.meds > 0 && gameState.player.health < CONFIG.PLAYER_MAX_HEALTH) {
-                 gameState.resources.meds--;
-                 gameState.player.health = Math.min(CONFIG.PLAYER_MAX_HEALTH, gameState.player.health + 50); // Heal 50 HP
-                 updateResourceUI();
-                 updateHealthUI();
-                 playSound('use_medkit_sound'); // Add sound effect
-                 showNarration("Used Medkit. Patching up the wounds...", 3000);
-             } else if (gameState.resources.meds <= 0) {
-                 showNarration("No Medkits remaining.", 2000);
-             } else {
-                  showNarration("Health already full.", 2000);
-             }
-         }
-
-        // --- Dialogue System ---
-        function startDialogue(dialogueId, npcId = null) {
-             if (!DIALOGUE_DATA[dialogueId]) {
-                 console.error("Dialogue not found:", dialogueId);
-                 return;
-             }
-             gameState.gamePaused = true; // Pause game during dialogue
-             gameState.currentDialogue = {
-                 id: dialogueId,
-                 npcId: npcId,
-                 data: DIALOGUE_DATA[dialogueId],
-                 lineIndex: 0,
-                 currentLineFullText: '', // Store full text for skipping
-                 canEnd: false, // Can the player exit early?
-             };
-             dialogueBox.style.display = 'flex';
-             advanceDialogue();
-         }
-
-        function advanceDialogue() {
-             if (!gameState.currentDialogue) return;
-
-             const currentLineData = gameState.currentDialogue.data.lines[gameState.currentDialogue.lineIndex];
-             if (!currentLineData) {
-                 // Should not happen if 'end' or 'next' is properly defined
-                  console.warn("Dialogue line undefined at index", gameState.currentDialogue.lineIndex, "for", gameState.currentDialogue.id);
-                 endDialogue();
-                 return;
-             }
-
-             // Clear previous choices
-             choiceContainer.innerHTML = '';
-             dialogueSpeaker.textContent = gameState.currentDialogue.data.speaker || "Unknown";
-             gameState.currentDialogue.currentLineFullText = currentLineData.text; // Store for skipping
-
-             // Trigger flags immediately when a line is shown
-             if (currentLineData.triggerFlag) {
-                 const parts = currentLineData.triggerFlag.split(':');
-                 if (parts.length > 1) {
-                     gameState.flags[parts[0]] = (parts[1] === 'true'); // Handle boolean flags like helped_kain:true/false
-                 } else {
-                     gameState.flags[currentLineData.triggerFlag] = true; // Simple flag like met_kain
-                 }
-                 console.log("Flag set:", currentLineData.triggerFlag, "=", gameState.flags[parts[0]]);
-             }
-
-             // Type out the current line
-             typeWriter(dialogueText, currentLineData.text, CONFIG.TYPEWRITER_SPEED, () => {
-                 // When typing finishes, check for choices or next step
-                 if (currentLineData.choices) {
-                     displayChoices(currentLineData.choices);
-                     gameState.currentDialogue.canEnd = false; // Cannot exit if choices are present
-                 } else {
-                      gameState.currentDialogue.canEnd = true; // Allow closing if no choices here
-                      // Prepare for next line or end
-                      gameState.currentDialogue.lineIndex++;
-                      if (!currentLineData.next && !currentLineData.end && gameState.currentDialogue.lineIndex >= gameState.currentDialogue.data.lines.length) {
-                         // Implicit end if no 'next' or 'end' and it's the last line
-                          gameState.currentDialogue.canEnd = true; // Allow closing dialogue
-                      } else if (!currentLineData.next && !currentLineData.end) {
-                         // More lines exist, wait for player input (e.g., Enter) to advance implicitly
-                         // We'll handle this in keydown - if no choices, Enter advances.
-                      }
-                 }
-             });
-         }
-
-        function displayChoices(choiceKeys) {
-            choiceContainer.innerHTML = ''; // Clear existing choices
-             choiceKeys.forEach(choiceKey => {
-                 // Find the dialogue data for the choice key
-                 const choiceTargetDialogue = DIALOGUE_DATA[choiceKey];
-                 if (!choiceTargetDialogue || !choiceTargetDialogue.lines.length) {
-                     console.warn("Choice target dialogue or lines missing for key:", choiceKey);
-                     return;
-                 }
-                 // Assume the first line of the target dialogue is the choice text prompt (can be improved)
-                 // OR, ideally, choices should be defined with their prompt text directly
-                 // Let's assume a structure like: choices: [ { text: "Say yes", target: "dialogue_yes"}, ... ]
-                 // For now, using the first line of the target as placeholder text
-
-                 // Simple version: Use the target key as text (Needs improvement)
-                 const choiceText = choiceTargetDialogue.lines[0].text.split('.')[0] || choiceKey.replace('kain_', '').replace('_', ' '); // Simple text generation
-
-                 const button = document.createElement('button');
-                 button.classList.add('dialogue-choice');
-                 button.dataset.choice = choiceKey; // Store target dialogue ID
-
-                 // Check conditions (e.g., required flags, skills, resources) - Placeholder
-                  let conditionMet = true; // checkCondition(choiceTargetDialogue.condition);
-                  if (conditionMet) {
-                      button.textContent = `> ${choiceText}`; // Show choice text
-                      button.onclick = () => handleChoice(choiceKey);
-                  } else {
-                     button.textContent = `[Unavailable] ${choiceText}`; // Show but disable
-                     button.disabled = true;
-                  }
-
-                 choiceContainer.appendChild(button);
-             });
-         }
-
-         function handleChoice(choiceKey) {
-             playSound('dialogue_advance');
-             if (!gameState.currentDialogue) return;
-
-             const choiceTargetDialogue = DIALOGUE_DATA[choiceKey];
-             if (!choiceTargetDialogue) {
-                 console.error("Target dialogue for choice not found:", choiceKey);
-                 endDialogue();
-                 return;
-             }
-
-             // --- Handle consequences defined directly on the choice target ---
-             // Note: It's often better to put consequences on the *target* node reached *after* the choice.
-             // But sometimes immediate effects are needed.
-             const firstLineOfTarget = choiceTargetDialogue.lines[0];
-
-              // Example: Modify NPC state based on the chosen path starting node
-             if (firstLineOfTarget.changeNpcState) {
-                 const { npcId, ...stateChanges } = firstLineOfTarget.changeNpcState;
-                 const npcElement = document.getElementById(npcId);
-                 if (npcElement) {
-                     Object.keys(stateChanges).forEach(key => {
-                         if (key === 'class') {
-                             npcElement.classList.add(stateChanges[key]); // Add class like 'hostile'
-                         } else {
-                              // Handle other state changes if needed (e.g., internal AI state)
-                         }
-                     });
-                     console.log(`NPC ${npcId} state changed:`, stateChanges);
-                 }
-             }
-
-             // Example: Trigger combat immediately
-             if (firstLineOfTarget.triggerCombat) {
-                  console.log("Combat triggered with:", firstLineOfTarget.triggerCombat);
-                 // endDialogue(); // End dialogue before starting combat
-                  // startCombat(firstLineOfTarget.triggerCombat); // Implement combat system
-                  showNarration(`* Violence erupts! * (Combat system placeholder)`, 4000);
-                 // For now, just end dialogue and maybe make NPC hostile visually
-                  const npcElement = document.getElementById(firstLineOfTarget.triggerCombat);
-                  if(npcElement) npcElement.classList.add('hostile');
-                   endDialogue();
-                   return; // Don't proceed with dialogue if combat starts
-             }
-             // --- End Immediate Consequences ---
-
-
-             // Set the current dialogue to the chosen path and advance
-             gameState.currentDialogue.id = choiceKey;
-             gameState.currentDialogue.data = choiceTargetDialogue;
-             gameState.currentDialogue.lineIndex = 0;
-             advanceDialogue();
-         }
-
-        function endDialogue() {
-            if (!gameState.currentDialogue) return;
-
-            const currentLineData = gameState.currentDialogue.data.lines[gameState.currentDialogue.lineIndex -1] || {}; // Get last shown line
-
-             // Check for final consequences on 'end: true' nodes
-            if (currentLineData.end) {
-                 if (currentLineData.changeNpcState) {
-                      const { npcId, ...stateChanges } = currentLineData.changeNpcState;
-                      const npcElement = document.getElementById(npcId);
-                     if (npcElement) {
-                         Object.keys(stateChanges).forEach(key => {
-                             if (key === 'class') {
-                                 npcElement.classList.add(stateChanges[key]);
-                             }
-                         });
-                         console.log(`NPC ${npcId} state changed on dialogue end:`, stateChanges);
-                     }
-                 }
-                 if (currentLineData.triggerCombat) {
-                     console.log("Combat triggered on dialogue end with:", currentLineData.triggerCombat);
-                     // startCombat(currentLineData.triggerCombat);
-                      showNarration(`* Conflict begins! * (Combat system placeholder)`, 4000);
-                      const npcElement = document.getElementById(currentLineData.triggerCombat);
-                      if(npcElement) npcElement.classList.add('hostile');
-                 }
-             }
-
-
-             dialogueBox.style.display = 'none';
-             gameState.currentDialogue = null;
-             gameState.gamePaused = false; // Unpause game
-             clearTimeout(typeWriterInterval); // Stop any lingering typewriter
-         }
-
-        // --- Log Reader System ---
-        function openLogReader(logId) {
-            if (!LOG_DATA[logId]) {
-                console.error("Log data not found:", logId);
-                return;
-            }
-            gameState.gamePaused = true;
-            gameState.currentLog = LOG_DATA[logId];
-            logTitle.textContent = gameState.currentLog.title;
-            logContent.textContent = ''; // Clear first
-             logReader.style.display = 'flex';
-             // Use typewriter for the log content for atmosphere
-             typeWriter(logContent, gameState.currentLog.content, CONFIG.TYPEWRITER_SPEED / 3, () => {
-                 // Optional callback when log finishes typing
-             });
-
-            // Update flag if reading this log has consequence
-            if (logId === 'log_001' && !gameState.flags.read_log_001) {
-                 gameState.flags.read_log_001 = true;
-                 console.log("Flag set: read_log_001 = true");
-                 // Maybe trigger a small psychological insight or memory fragment
-                 // showNarration("This handwriting... seems faintly familiar.", 4000);
-                 triggerFlashback("Screaming echoes... metal groans...", 1000);
-            }
-        }
-
-        function closeLogReader() {
-            logReader.style.display = 'none';
-            gameState.gamePaused = false;
-            gameState.currentLog = null;
-            clearTimeout(typeWriterInterval); // Stop typewriter
-        }
-
-
-        // --- Level Loading ---
-        function loadLevel(levelId) {
-            console.log(`Loading level: ${levelId}`);
-            gameState.level.currentLevelId = levelId;
-            // Clear existing dynamic elements from game world
-            gameWorld.querySelectorAll('.platform, .hazard, .resource-item, .interactive-object, .survivor-npc, .environmental-detail').forEach(el => el.remove());
-            gameState.level.elements = []; // Clear the cached element list
-
-            const levelData = LEVELS[levelId];
-            if (!levelData) {
-                console.error("Level data not found for:", levelId);
-                gameOver(`Fatal Error: Cannot load level ${levelId}`);
-                return;
-            }
-
-            // Set background if specified
-             if (levelData.background) {
-                 gameWorld.style.backgroundImage = `url('${levelData.background}')`; // Use actual path
-             } else {
-                 gameWorld.style.backgroundImage = `url('placeholder_background.png')`; // Default
-             }
-
-
-            // Create elements based on level data
-            levelData.platforms.forEach(p => createWorldElement('platform', p.x, p.y, p.w, p.h, p.classes));
-            levelData.hazards.forEach(h => createWorldElement('hazard', h.x, h.y, h.w, h.h, h.classes));
-            levelData.resources.forEach(r => {
-                 // Check if resource already collected based on a persistent state (e.g., if we implement saving)
-                 // For now, always create them on level load
-                 const resEl = createWorldElement('resource-item', r.x, r.y, 20, 20, null, { type: r.type });
-                 // Add check here if needed: if (isResourceCollected(levelId, r.id)) resEl.remove();
-             });
-            levelData.interactives.forEach(i => {
-                 const intEl = createWorldElement('interactive-object', i.x, i.y, i.w, i.h, i.classes, { logid: i.logId });
-                  // Check flags if interaction should be disabled/different
-                  // e.g., if (gameState.flags.read_log_001 && i.logId === 'log_001') intEl.classList.add('disabled');
-             });
-            levelData.npcs.forEach(n => {
-                 // Check flags for NPC state (hostile, missing, etc.) before creating
-                 let npcState = 'default'; // or load saved state
-                 let npcClasses = n.classes || [];
-
-                 // Example: If Kain turned hostile previously
-                 if (n.id === 'npc_kain' && gameState.flags.helped_kain === false) {
-                     npcState = 'hostile';
-                     npcClasses.push('hostile');
-                      // Maybe even prevent him from spawning if he was killed/left
-                      // if (gameState.flags.kain_dead) return;
-                 } else if (n.id === 'npc_kain' && gameState.flags.met_kain && gameState.flags.helped_kain === true) {
-                     // Maybe Kain is gone if you helped him?
-                      // return; // Don't spawn Kain if he left
-                 }
-
-                 const npcEl = createWorldElement('survivor-npc', n.x, n.y, 30, 50, npcClasses, { dialogue: n.dialogueId }, n.id);
-                 // Add specific behaviours based on state later
-                 if (n.id === 'npc_some_traumatized_guy') { // Example
-                     npcEl.classList.add('traumatized');
-                 }
-            });
-            levelData.details?.forEach(d => createWorldElement('environmental-detail', d.x, d.y, d.w, d.h, d.classes));
-
-             // Set player start position for this level
-             if (levelData.startPos) {
-                 gameState.player.x = levelData.startPos.x;
-                 gameState.player.y = levelData.startPos.y;
-                 gameState.player.vx = 0;
-                 gameState.player.vy = 0;
-             }
-
-            console.log("Level loaded. Elements:", gameState.level.elements.length);
-             showNarration(levelData.entryNarration || `Entering ${levelId}...`, 4000);
-        }
-
-        function createWorldElement(baseClass, x, y, w, h, classes = [], dataAttrs = {}, id = null) {
-            const el = document.createElement('div');
-            el.classList.add(baseClass);
-            if (classes && classes.length > 0) {
-                 el.classList.add(...classes);
-            }
-            el.style.left = `${x}px`;
-            el.style.bottom = `${y}px`;
-            el.style.width = `${w}px`;
-            el.style.height = `${h}px`;
-
-            Object.keys(dataAttrs).forEach(key => {
-                if (dataAttrs[key]) { // Only add data attribute if value is provided
-                     el.dataset[key] = dataAttrs[key];
-                }
-            });
-
-            if (id) {
-                el.id = id;
-            }
-
-            gameWorld.appendChild(el);
-            gameState.level.elements.push(getElementRect(el)); // Add its rect to the cache
-             return el; // Return the created element if needed
-        }
-
-        // --- Level Definitions ---
-        const LEVELS = {
-            'derelict_station_entry': {
-                 background: 'textures/derelict_corridor_01.png', // Specify background image
-                 entryNarration: "The airlock sighs open. Dust motes dance in the emergency lights. Silence... heavy and cold.",
-                 startPos: { x: 100, y: 60 },
-                 platforms: [
-                    { x: 0, y: 0, w: 1024, h: 50, classes: ['metal-floor'] }, // Main floor
-                    { x: 200, y: 150, w: 200, h: 20, classes: ['walkway-grate'] },
-                    { x: 550, y: 250, w: 150, h: 15, classes: ['decaying', 'metal-panel'] },
-                    { x: 750, y: 120, w: 100, h: 20 },
-                 ],
-                 hazards: [
-                    { x: 400, y: 50, w: 100, h: 20, classes: ['spikes', 'floor-hazard'] }, // Spikes on the floor
-                     { x: 550, y: 240, w: 150, h: 10, classes: ['electric', 'hazard-wire'] } // Sparking wire above decaying platform (visual only for now)
-                 ],
-                 resources: [
-                    { type: 'energy', x: 250, y: 180, id: 'entry_energy_1' },
-                    { type: 'scrap', x: 800, y: 60, id: 'entry_scrap_1' },
-                     { type: 'meds', x: 600, y: 275, id: 'entry_meds_1' }, // On the decaying platform
-                 ],
-                 interactives: [
-                    { type: 'log', x: 650, y: 50, w: 40, h: 60, classes: ['log-terminal'], logId: 'log_001', id: 'terminal_001' },
-                    // { type: 'door', x: 984, y: 50, w: 40, h: 100, classes: ['locked-door'], targetLevel: 'maintenance_tunnels', requires: 'keycard_alpha' } // Example door
-                 ],
-                 npcs: [
-                    { id: 'npc_kain', x: 850, y: 50, dialogueId: 'kain_intro' },
-                 ],
-                 details: [ // Non-interactive visual elements
-                      { x: 150, y: 688, w: 5, h: 80, classes: ['detail-wires'] }, // Hanging wires from ceiling (y=768 is top)
-                      { x: 300, y: 50, w: 60, h: 40, classes: ['detail-stain'] }, // Stain on floor
-                     { x: 0, y: 50, w: 100, h: 150, classes: ['detail-debris-pile'] }, // Pile of junk
-                 ]
-            },
-             'maintenance_tunnels': { // Placeholder for next area
-                 background: 'textures/tunnels_01.png',
-                 entryNarration: "The air here is thick with the smell of ozone and decay. Water drips rhythmically somewhere in the dark.",
-                 startPos: { x: 50, y: 60 },
-                 platforms: [
-                      { x: 0, y: 0, w: 1024, h: 50, classes: ['concrete-floor'] },
-                      // Add tunnel specific platforms... pipes, grates etc.
-                  ],
-                 hazards: [
-                      // Add tunnel hazards... steam vents, dripping acid?
-                  ],
-                 resources: [],
-                 interactives: [
-                      { type: 'log', x: 400, y: 50, w: 40, h: 60, classes: ['log-terminal', 'damaged'], logId: 'log_002', id: 'terminal_002' },
-                  ],
-                 npcs: [
-                      // Maybe a traumatized survivor hiding here?
-                      // { id: 'npc_shaky_figure', x: 700, y: 50, dialogueId: 'shaky_intro', classes: ['traumatized'] }
-                  ],
-                 details: []
-             }
-            // Add more level definitions...
-        };
-
-
-        // --- Game Loop ---
-        let lastTime = 0;
-        function gameLoop(timestamp) {
-            const deltaTime = Math.min(timestamp - lastTime, 50); // Delta time in ms, cap at 50ms (20 FPS min)
-            lastTime = timestamp;
-
-            if (!gameState.gamePaused) {
-                // --- Update ---
-                updatePlayer(deltaTime);
-                updateWorld(deltaTime); // Update other entities, effects
-                checkInteractions();
-                 handleInteraction(); // Process interaction input if conditions met
-                 updatePsychology(deltaTime); // Update psychological effects/state
-            }
-
-            // --- Render ---
-             renderPlayer();
-             // renderWorld(); // If world elements need dynamic rendering updates beyond CSS
-
-            requestAnimationFrame(gameLoop); // Continue the loop
-        }
-
-        function updatePlayer(dt) {
-            const { player, input } = gameState;
-
-            // Horizontal Movement
-            let targetVx = 0;
-            if (input.left) {
-                targetVx = -CONFIG.PLAYER_SPEED;
-                player.facingRight = false;
-                 playerElement.style.transform = 'scaleX(-1)'; // Flip sprite visually
-            }
-            if (input.right) {
-                targetVx = CONFIG.PLAYER_SPEED;
-                player.facingRight = true;
-                 playerElement.style.transform = 'scaleX(1)'; // Normal facing
-            }
-
-            // Apply some acceleration/friction
-            player.vx += (targetVx - player.vx) * (player.isOnGround ? 0.3 : 0.1); // Less control in air
-             if (Math.abs(player.vx) < 0.1) player.vx = 0; // Snap to stop
-
-            // Vertical Movement (Gravity)
-            player.vy -= CONFIG.GRAVITY;
-            player.vy = Math.max(player.vy, -CONFIG.TERMINAL_VELOCITY); // Clamp fall speed
-
-            // Jumping
-            if (input.jump && player.isOnGround) {
-                player.vy = CONFIG.JUMP_FORCE;
-                player.isOnGround = false;
-                 playSound('jump');
-                // Reset jump input immediately to prevent holding jump
-                 input.jump = false;
-            }
-
-            // Calculate potential new position
-            let nextX = player.x + player.vx;
-            let nextY = player.y + player.vy;
-
-             // Collision Detection and Resolution
-             player.isOnGround = false; // Assume not on ground until collision check proves otherwise
-             let playerRect = { x: nextX, y: nextY, width: player.width, height: player.height };
-
-             gameState.level.elements.forEach(worldRect => {
-                 if (worldRect.type === 'platform' || worldRect.type === 'hazard') { // Collide with platforms and hazards
-                     if (checkCollision(playerRect, worldRect)) {
-                         // --- Collision Resolution ---
-                         const overlapX = (player.x + player.width / 2) - (worldRect.x + worldRect.width / 2);
-                         const overlapY = (player.y + player.height / 2) - (worldRect.y + worldRect.height / 2);
-                         const combinedHalfWidths = player.width / 2 + worldRect.width / 2;
-                         const combinedHalfHeights = player.height / 2 + worldRect.height / 2;
-
-                         // Check Y collision first
-                         if (Math.abs(overlapY) < combinedHalfHeights) {
-                             if (player.vy < 0 && overlapY > 0) { // Falling onto platform/hazard
-                                 // Check if player was sufficiently above in the previous frame
-                                  const prevPlayerBottom = player.y;
-                                  const platformTop = worldRect.y + worldRect.height;
-                                  if (prevPlayerBottom >= platformTop - 1) { // Allow small tolerance
-                                      nextY = worldRect.y + worldRect.height; // Snap to top
-                                      player.vy = 0;
-                                      player.isOnGround = true;
-                                       // Check if it's a hazard landed on
-                                       if (worldRect.type === 'hazard') {
-                                           takeDamage(CONFIG.HAZARD_DAMAGE);
-                                       }
-                                       // Play landing sound (if not just damaged)
-                                       // else if (!player.isInvincible) playSound('land');
-                                  }
-
-                             } else if (player.vy > 0 && overlapY < 0) { // Hitting platform/hazard from below
-                                  const prevPlayerTop = player.y + player.height;
-                                  const platformBottom = worldRect.y;
-                                 if (prevPlayerTop <= platformBottom + 1) {
-                                     nextY = worldRect.y - player.height; // Snap below
-                                     player.vy = 0;
-                                      // Hitting head on hazard?
-                                      if (worldRect.type === 'hazard') takeDamage(CONFIG.HAZARD_DAMAGE);
-                                 }
-                             }
-                         }
-
-                         // Re-check collision for X axis *after* resolving Y
-                         playerRect.y = nextY; // Update rect for X check
-                         if (checkCollision(playerRect, worldRect)) {
-                             if (Math.abs(overlapX) < combinedHalfWidths) {
-                                  // Check if player was sufficiently to the side in the previous frame
-                                  const prevPlayerRight = player.x + player.width;
-                                  const prevPlayerLeft = player.x;
-                                  const objRight = worldRect.x + worldRect.width;
-                                  const objLeft = worldRect.x;
-
-                                 if (player.vx > 0 && overlapX < 0) { // Moving right, hit left side of object
-                                     if (prevPlayerRight <= objLeft + 1) {
-                                         nextX = worldRect.x - player.width; // Snap to left
-                                         player.vx = 0;
-                                          if (worldRect.type === 'hazard') takeDamage(CONFIG.HAZARD_DAMAGE);
-                                     }
-                                 } else if (player.vx < 0 && overlapX > 0) { // Moving left, hit right side of object
-                                      if (prevPlayerLeft >= objRight - 1) {
-                                          nextX = worldRect.x + worldRect.width; // Snap to right
-                                          player.vx = 0;
-                                           if (worldRect.type === 'hazard') takeDamage(CONFIG.HAZARD_DAMAGE);
-                                      }
-                                 }
-                             }
-                         }
-                     }
-                 }
-             });
-
-
-            // Apply final position
-            player.x = nextX;
-            player.y = nextY;
-
-             // Keep player within bounds (simple example)
-             const gameWidth = gameContainer.clientWidth;
-             const gameHeight = gameContainer.clientHeight; // Use if needed
-             player.x = Math.max(0, Math.min(player.x, gameWidth - player.width));
-
-             // Check for falling out of bounds (death)
-             if (player.y < -player.height * 2) { // Fallen off screen
-                 gameOver("Lost to the void below...");
-             }
-
-            // Update invincibility timer
-            if (player.isInvincible) {
-                player.invincibleTimer -= dt;
-                if (player.invincibleTimer <= 0) {
-                    player.isInvincible = false;
-                    player.invincibleTimer = 0;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(payload),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log(`API Response:`, data);
+
+                    if (!data.choices || !data.choices.length || !data.choices[0].message || !data.choices[0].message.content) {
+                        throw new Error(`Invalid response format`);
+                    }
+
+                    let content = data.choices[0].message.content.trim();
+                    let questionArray;
+
+                    // Extract valid JSON array if wrapped in backticks or mixed with text
+                    const jsonMatch = content.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) {
+                        content = jsonMatch[0];
+                    }
+
+                    try {
+                        questionArray = JSON.parse(content);
+                    } catch (parseError) {
+                        console.error(`Raw content:`, content);
+                        throw new Error(`Failed to parse JSON: ${parseError.message}`);
+                    }
+
+                    // Validate each question in the array
+                    if (!Array.isArray(questionArray) || questionArray.length === 0) {
+                        throw new Error(`Response is not a valid array of questions: ${JSON.stringify(questionArray)}`);
+                    }
+
+                    questionArray.forEach((question, index) => {
+                        if (!question.question || 
+                            !question.options || 
+                            !['A', 'B', 'C', 'D'].every(key => key in question.options) || 
+                            typeof question.correctAnswerIndex !== 'number' || 
+                            question.correctAnswerIndex < 0 || question.correctAnswerIndex > 3 || 
+                            !question.explanation) {
+                            throw new Error(`Invalid structure for question ${index + 1}: ${JSON.stringify(question)}`);
+                        }
+                        questions.push({
+                            question: question.question,
+                            options: [question.options.A, question.options.B, question.options.C, question.options.D].filter(opt => opt),
+                            correctAnswerIndex: question.correctAnswerIndex,
+                            explanation: question.explanation
+                        });
+                    });
+
+                    break; // Exit retry loop on success
+                } catch (error) {
+                    lastError = error;
+                    console.error(`Error (Attempt ${attempt}):`, error);
+                    if (attempt === MAX_RETRIES) {
+                        displayError(customizationError, `Failed to generate questions after retries: ${error.message}`);
+                        loadingIndicator.classList.add('hidden-element');
+                        return questions; // Return any questions if partially successful
+                    }
                 }
             }
+
+            loadingIndicator.classList.add('hidden-element');
+            return questions.length > 0 ? questions : [];
         }
 
-        function updateWorld(dt) {
-            // Update NPCs, moving platforms, projectiles, effects etc.
-            // Example: Basic NPC behavior (placeholder)
-             const npcs = gameState.level.elements.filter(el => el.type === 'npc');
-             npcs.forEach(npcData => {
-                 const npcElement = npcData.element;
-                 if (npcElement.classList.contains('hostile')) {
-                     // Basic hostile behavior: move towards player if close?
-                     // const distance = Math.abs(gameState.player.x - npcData.x);
-                     // if (distance < 200) { ... move npc ... attack ... }
-                 } else if (npcElement.classList.contains('traumatized')) {
-                     // Maybe just animate the trembling (already done via CSS)
-                 }
-             });
+        async function startNewQuiz(prompt, num) {
+            hideError(customizationError);
+            quizSettings = { model: modelName, prompt, numQuestions: num };
+            loadingIndicator.classList.remove('hidden-element');
+            startQuizButton.disabled = true;
+
+            const questions = await generateQuestions(prompt, num, modelName);
+            if (questions.length > 0) {
+                currentQuestions = questions;
+                currentQuestionIndex = 0;
+                userAnswers = [];
+                score = 0;
+                showPage('quiz-page');
+                await displayQuestion(currentQuestionIndex);
+            } else {
+                displayError(customizationError, "Failed to generate any questions. Check your prompt, model, or API key.");
+            }
+            loadingIndicator.classList.add('hidden-element');
+            startQuizButton.disabled = false;
         }
 
-         function checkInteractions() {
-             const playerCenterX = gameState.player.x + gameState.player.width / 2;
-             const playerCenterY = gameState.player.y + gameState.player.height / 2; // Mid-point Y
+        async function displayQuestion(index) {
+            if (index < 0 || index >= currentQuestions.length) return;
+            const questionData = currentQuestions[index];
+            questionTextElement.textContent = questionData.question;
+            optionsContainer.innerHTML = '';
+            feedbackTextElement.textContent = '';
+            explanationArea.classList.add('hidden-element');
+            explanationTextElement.textContent = '';
 
-             let nearestInteractable = null;
-             let nearestNpc = null;
-             let minDistInteractable = CONFIG.INTERACTION_RANGE;
-             let minDistNpc = CONFIG.NPC_DIALOGUE_RANGE;
+            questionData.options.forEach((option, i) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'bg-white', 'hover:bg-gray-100', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
+                button.dataset.index = i;
+                button.onclick = () => selectAnswer(index, i);
+                optionsContainer.appendChild(button);
+            });
 
-             hideInteractionPrompt(); // Hide prompt initially each frame
-             gameState.player.interactionTarget = null;
-             gameState.player.dialogueTarget = null;
+            const currentQuestionNum = index + 1;
+            const totalQuestions = currentQuestions.length;
+            progressTextElement.textContent = `Question ${currentQuestionNum} / ${totalQuestions}`;
+            progressBarElement.style.width = `${(currentQuestionNum / totalQuestions) * 100}%`;
 
-             gameState.level.elements.forEach(worldRect => {
-                 const targetCenterX = worldRect.x + worldRect.width / 2;
-                 const targetCenterY = worldRect.y + worldRect.height / 2;
-                 const distance = Math.sqrt(Math.pow(playerCenterX - targetCenterX, 2) + Math.pow(playerCenterY - targetCenterY, 2));
+            await typesetMathJax([questionTextElement, optionsContainer]);
 
-                 // Check for NPCs first
-                 if (worldRect.type === 'npc' && distance < minDistNpc) {
-                      // Check if NPC has dialogue and isn't hostile (or specific interaction for hostile?)
-                      const npcElement = worldRect.element;
-                     if (worldRect.dialogueId && !npcElement.classList.contains('combat-active')) { // Add combat flag later
-                         minDistNpc = distance;
-                         nearestNpc = worldRect.element;
-                     }
-                 }
-                  // Check for other interactables (logs, items) if no NPC is closer
-                 else if ((worldRect.type === 'interactive' || worldRect.type === 'resource') && distance < minDistInteractable) {
-                     minDistInteractable = distance;
-                     nearestInteractable = worldRect.element;
-                 }
-             });
+            const answered = userAnswers.find(ans => ans.questionIndex === index);
+            prevButton.disabled = index === 0;
+            nextButton.classList.toggle('hidden-element', index === totalQuestions - 1);
+            finishButton.classList.toggle('hidden-element', index !== totalQuestions - 1);
+            nextButton.disabled = !answered;
+            finishButton.disabled = !answered;
 
-             // Prioritize NPC interaction prompt if available
-             if (nearestNpc) {
-                 const npcData = getElementRect(nearestNpc);
-                 showInteractionPrompt(`[E] Talk to ${DIALOGUE_DATA[npcData.dialogueId]?.speaker || 'Survivor'}`, nearestNpc);
-                  gameState.player.dialogueTarget = nearestNpc;
-                  gameState.player.interactionTarget = null; // Ensure only one target type active
-             }
-             // Otherwise, show prompt for the closest object/resource
-             else if (nearestInteractable) {
-                 const targetData = getElementRect(nearestInteractable);
-                 let promptText = `[E] Interact`;
-                 if (targetData.type === 'interactive' && targetData.logId) {
-                     promptText = `[E] Read Log`;
-                 } else if (targetData.type === 'resource') {
-                     promptText = `[E] Take ${targetData.resourceType || 'Item'}`;
-                 }
-                 showInteractionPrompt(promptText, nearestInteractable);
-                  gameState.player.interactionTarget = nearestInteractable;
-                  gameState.player.dialogueTarget = null;
-             }
-         }
-
-
-        function updatePsychology(dt) {
-             // Example: Increase trauma slightly over time in dangerous areas, or after specific events
-             // gameState.psychologicalState.traumaLevel += 0.01 * dt;
-
-             // Example: Trigger effects based on trauma level or specific flags
-             if (gameState.psychologicalState.traumaLevel > 50 && Math.random() < 0.001) {
-                 // applyPsychologicalEffect('glitch', 500);
-                 // playSound('random_whisper');
-             }
-             if (gameState.player.health < CONFIG.PLAYER_MAX_HEALTH * 0.2 && !gameState.psychologicalState.activeEffects.includes('vignette')) {
-                  // applyPsychologicalEffect('vignette', 5000); // Persistent vignette when low health
-             }
-
-             // Handle active effects duration if needed (currently handled by setTimeout in apply function)
+            if (answered) {
+                highlightAnswer(answered.selectedOptionIndex, answered.isCorrect, index);
+                disableOptions();
+                await showExplanation(questionData);
+            } else {
+                enableOptions();
+            }
         }
 
-        function renderPlayer() {
-            updateElementPosition(playerElement, gameState.player.x, gameState.player.y);
-            // Update player animation state based on vx, vy, isOnGround later
+        function selectAnswer(questionIndex, selectedOptionIndex) {
+            if (userAnswers.some(ans => ans.questionIndex === questionIndex)) return;
+            const questionData = currentQuestions[questionIndex];
+            const isCorrect = selectedOptionIndex === questionData.correctAnswerIndex;
+            userAnswers.push({ questionIndex, selectedOptionIndex, isCorrect });
+            if (isCorrect) score++;
+            highlightAnswer(selectedOptionIndex, isCorrect, questionIndex);
+            disableOptions();
+            feedbackTextElement.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
+            feedbackTextElement.classList.add(isCorrect ? 'text-green-600' : 'text-red-600');
+            feedbackTextElement.classList.remove(!isCorrect ? 'text-green-600' : 'text-red-600');
+            showExplanation(questionData);
+            if (currentQuestionIndex === currentQuestions.length - 1) finishButton.disabled = false;
+            else nextButton.disabled = false;
         }
 
-        // --- Initialization ---
-        function initGame() {
-            console.log("Initializing Echoes of the Void...");
-            // Add input listeners
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keyup', handleKeyUp);
-
-             // Add listener for log close button
-             logCloseButton.addEventListener('click', closeLogReader);
-
-             // Initial UI update
-            updateHealthUI();
-            updateResourceUI();
-
-             // Load the starting level
-            loadLevel(gameState.level.currentLevelId); // Load 'derelict_station_entry'
-
-            // Show initial narration
-             // showNarration("Waking up... Cold metal beneath. Where... am I?", 6000);
-            triggerFlashback("SYSTEM REBOOT... Cryo-stasis failure...", 2000);
-
-            // Start the game loop
-            lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
-            console.log("Game loop started.");
+        async function showExplanation(questionData) {
+            if (questionData.explanation) {
+                explanationTextElement.textContent = questionData.explanation;
+                explanationArea.classList.remove('hidden-element');
+                await typesetMathJax([explanationTextElement]);
+            } else {
+                explanationArea.classList.add('hidden-element');
+            }
         }
 
-        // --- Start Game ---
-        window.onload = initGame;
+        function highlightAnswer(selectedIndex, isCorrect, questionIndex) {
+            const buttons = optionsContainer.querySelectorAll('button');
+            const correctIndex = currentQuestions[questionIndex].correctAnswerIndex;
+            buttons.forEach((button, i) => {
+                button.classList.remove('selected-answer', 'correct-answer', 'incorrect-answer', 'hover:bg-gray-100', 'opacity-80');
+                if (i === selectedIndex) {
+                    button.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
+                } else if (i === correctIndex && !isCorrect) {
+                    button.classList.add('correct-answer', 'opacity-80');
+                }
+            });
+        }
 
+        function disableOptions() {
+            optionsContainer.querySelectorAll('button').forEach(button => {
+                button.disabled = true;
+                button.classList.add('opacity-75', 'cursor-not-allowed');
+                button.classList.remove('hover:bg-gray-100');
+            });
+        }
+
+        function enableOptions() {
+            optionsContainer.querySelectorAll('button').forEach(button => {
+                button.disabled = false;
+                button.classList.remove('opacity-75', 'cursor-not-allowed', 'correct-answer', 'incorrect-answer', 'opacity-80');
+                button.classList.add('hover:bg-gray-100');
+            });
+        }
+
+        function showResults() {
+            finalScoreElement.textContent = `${score} / ${currentQuestions.length}`;
+            showPage('results-page');
+        }
+
+        // --- Initial Setup ---
+        showPage('setup-page');
     </script>
 </body>
 </html>
