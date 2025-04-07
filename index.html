@@ -26,99 +26,139 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/auto-render.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #1f2937; 
+            color: #d1d5db;
+        }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         .hidden-element { display: none; }
-        .option-button { transition: background-color 0.2s ease, transform 0.1s ease, border-color 0.2s ease; }
-        .option-button:not(:disabled):hover { background-color: #e5e7eb; border-color: #9ca3af; }
+        .option-button { 
+            transition: background-color 0.2s ease, transform 0.1s ease, border-color 0.2s ease; 
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+        .option-button:not(:disabled):hover { 
+            background-color: #4b5563; 
+            border-color: #6b7280; 
+        }
         .option-button:not(:disabled):active { transform: scale(0.98); }
-        .correct-answer { background-color: #10b981 !important; color: white !important; border-color: #059669 !important; }
-        .incorrect-answer { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
+        .correct-answer { 
+            background-color: #10b981 !important; 
+            color: white !important; 
+            border-color: #059669 !important; 
+        }
+        .incorrect-answer { 
+            background-color: #ef4444 !important; 
+            color: white !important; 
+            border-color: #dc2626 !important; 
+        }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
-        mjx-container { overflow-x: auto; overflow-y: hidden; display: block; margin: 0.5rem 0; padding: 2px; }
-        .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4f46e5; animation: spin 1s ease infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #question-text, #explanation-text, .option-button { word-wrap: break-word; overflow-wrap: break-word; }
+        mjx-container { 
+            overflow-x: auto; 
+            overflow-y: hidden; 
+            display: block; 
+            margin: 0.5rem 0; 
+            padding: 2px; 
+        }
+        .spinner { 
+            border: 4px solid rgba(255, 255, 255, 0.1); 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            border-left-color: #8b5cf6; 
+            animation: spin 1s ease infinite; 
+            display: inline-block; 
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        #question-text, #explanation-text, .option-button { 
+            word-wrap: break-word; 
+            overflow-wrap: break-word; 
+        }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-4">
-    <div class="container mx-auto max-w-2xl w-full bg-white rounded-xl shadow-2xl overflow-hidden">
+<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black p-4">
+    <div class="container mx-auto max-w-2xl w-full bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
 
         <div id="setup-page" class="p-6 md:p-10 transition-all duration-500">
-            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">AI PYQs Bot Setup</h1>
-            <p class="text-center text-gray-600 mb-8">Enter your OpenRouter API details.</p>
+            <h1 class="text-3xl font-bold mb-6 text-center text-white">AI PYQs Bot Setup</h1>
+            <p class="text-center text-gray-400 mb-8">Enter your OpenRouter API details.</p>
             <div class="space-y-5">
                 <div>
-                    <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-1">OpenRouter API Key <span class="text-red-500">*</span></label>
-                    <input type="password" id="apiKey" name="apiKey" placeholder="Enter your OpenRouter API Key (sk-or-...)" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                    <p class="mt-1 text-xs text-gray-500">Stored temporarily in browser session. <strong class="text-red-600">Handle with care.</strong></p>
+                    <label for="apiKey" class="block text-sm font-medium text-gray-300 mb-1">OpenRouter API Key <span class="text-red-500">*</span></label>
+                    <input type="password" id="apiKey" name="apiKey" placeholder="Enter your OpenRouter API Key (sk-or-...)" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-gray-700 text-gray-200">
+                    <p class="mt-1 text-xs text-gray-400">Stored temporarily in browser session. <strong class="text-red-600">Handle with care.</strong></p>
                 </div>
                 <div>
-                    <label for="baseUrl" class="block text-sm font-medium text-gray-700 mb-1">Base URL (Optional)</label>
-                    <input type="url" id="baseUrl" name="baseUrl" placeholder="Default: https://openrouter.ai/api/v1" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                    <p class="mt-1 text-xs text-gray-500">Leave blank for default or enter custom endpoint/proxy.</p>
+                    <label for="baseUrl" class="block text-sm font-medium text-gray-300 mb-1">Base URL (Optional)</label>
+                    <input type="url" id="baseUrl" name="baseUrl" placeholder="Default: https://openrouter.ai/api/v1" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-gray-700 text-gray-200">
+                    <p class="mt-1 text-xs text-gray-400">Leave blank for default or enter custom endpoint/proxy.</p>
                 </div>
                 <div>
-                    <label for="openRouterModel" class="block text-sm font-medium text-gray-700 mb-1">OpenRouter Model Name <span class="text-red-500">*</span></label>
-                    <input type="text" id="openRouterModel" name="openRouterModel" placeholder="e.g., xai/grok" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
-                    <p class="mt-1 text-xs text-gray-500">Specify the exact model to use via OpenRouter (see OpenRouter docs for available models).</p>
+                    <label for="openRouterModel" class="block text-sm font-medium text-gray-300 mb-1">OpenRouter Model Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="openRouterModel" name="openRouterModel" placeholder="e.g., xai/grok" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-gray-700 text-gray-200">
+                    <p class="mt-1 text-xs text-gray-400">Specify the exact model to use via OpenRouter (see OpenRouter docs for available models).</p>
                 </div>
-                <div id="setup-error" class="text-red-600 text-sm hidden-element font-medium text-center p-2 bg-red-50 rounded-md border border-red-200"></div>
+                <div id="setup-error" class="text-red-500 text-sm hidden-element font-medium text-center p-2 bg-red-900/50 rounded-md border border-red-800"></div>
                 <button id="submit-setup" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Continue to Customization</button>
             </div>
         </div>
 
         <div id="customization-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
-            <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Customize Your Quiz</h1>
-            <p class="text-center text-gray-600 mb-8">Describe the questions you need. Be specific!</p>
+            <h1 class="text-3xl font-bold mb-6 text-center text-white">Customize Your Quiz</h1>
+            <p class="text-center text-gray-400 mb-8">Describe the questions you need. Be specific!</p>
             <div class="space-y-5">
                 <div>
-                    <label for="questionPrompt" class="block text-sm font-medium text-gray-700 mb-1">Question Prompt <span class="text-red-500">*</span></label>
-                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Easy difficulty Thermodynamics questions for NEET UG'" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs if needed.</p>
+                    <label for="questionPrompt" class="block text-sm font-medium text-gray-300 mb-1">Question Prompt <span class="text-red-500">*</span></label>
+                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Easy difficulty Thermodynamics questions for NEET UG'" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-gray-700 text-gray-200"></textarea>
+                    <p class="mt-1 text-xs text-gray-400">Mention exam, subject, topic, difficulty, PYQs if needed.</p>
                 </div>
                 <div>
-                    <label for="numQuestions" class="block text-sm font-medium text-gray-700 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
-                    <input type="number" id="numQuestions" name="numQuestions" min="1" max="25" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <label for="numQuestions" class="block text-sm font-medium text-gray-300 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
+                    <input type="number" id="numQuestions" name="numQuestions" min="1" max="25" value="5" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out bg-gray-700 text-gray-200">
                 </div>
-                <div id="customization-error" class="text-red-600 text-sm hidden-element font-medium text-center p-2 bg-red-50 rounded-md border border-red-200"></div>
+                <div id="customization-error" class="text-red-500 text-sm hidden-element font-medium text-center p-2 bg-red-900/50 rounded-md border border-red-800"></div>
                 <button id="start-quiz" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generate & Start Quiz</button>
-                <button id="back-to-setup" class="w-full mt-2 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">Back to API Setup</button>
+                <button id="back-to-setup" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Back to API Setup</button>
             </div>
             <div id="loading-indicator" class="hidden-element mt-6 text-center">
-                <p id="loading-text" class="text-indigo-600 font-semibold mb-3">Generating questions...</p>
+                <p id="loading-text" class="text-indigo-400 font-semibold mb-3">Generating questions...</p>
                 <div class="spinner mx-auto"></div>
-                <p class="text-sm text-gray-500 mt-3">This may take a few moments, please wait.</p>
+                <p class="text-sm text-gray-400 mt-3">This may take a few moments, please wait.</p>
             </div>
         </div>
 
         <div id="quiz-page" class="hidden-element p-6 md:p-10 transition-all duration-500">
-            <div class="flex justify-between items-center mb-5 border-b pb-3 border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">Quiz Time!</h2>
-                <button id="exit-quiz" title="Exit Quiz" class="text-sm bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300 border border-red-200">Exit</button>
+            <div class="flex justify-between items-center mb-5 border-b pb-3 border-gray-700">
+                <h2 class="text-2xl font-bold text-white">Quiz Time!</h2>
+                <button id="exit-quiz" title="Exit Quiz" class="text-sm bg-red-900 hover:bg-red-800 text-red-200 font-semibold py-1 px-3 rounded-md shadow-sm transition duration-300 border border-red-700">Exit</button>
             </div>
             <div class="mb-6">
                 <div class="flex justify-between mb-1">
-                    <span class="text-sm font-medium text-indigo-700">Progress</span>
-                    <span id="progress-text" class="text-sm font-medium text-indigo-700">Question 1 / 5</span>
+                    <span class="text-sm font-medium text-indigo-400">Progress</span>
+                    <span id="progress-text" class="text-sm font-medium text-indigo-400">Question 1 / 5</span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div class="w-full bg-gray-700 rounded-full h-2.5">
                     <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 20%"></div>
                 </div>
             </div>
-            <div id="question-container" class="mb-6 p-5 border border-gray-200 rounded-lg bg-gray-50 min-h-[120px] shadow-sm">
-                <p id="question-text" class="text-lg text-gray-900 leading-relaxed">Loading question...</p>
+            <div id="question-container" class="mb-6 p-5 border border-gray-700 rounded-lg bg-gray-900 min-h-[120px] shadow-sm">
+                <p id="question-text" class="text-lg text-gray-200 leading-relaxed">Loading question...</p>
             </div>
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
             <div id="feedback-container" class="min-h-[60px] mb-6">
                 <p id="feedback-text" class="text-center font-semibold text-xl"></p>
-                <div id="explanation-area" class="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-800 hidden-element shadow-sm">
-                    <strong class="text-blue-800 block mb-1 text-base">Explanation:</strong>
+                <div id="explanation-area" class="mt-3 p-4 bg-indigo-900/50 border border-indigo-800 rounded-lg text-sm text-gray-200 hidden-element shadow-sm">
+                    <strong class="text-indigo-300 block mb-1 text-base">Explanation:</strong>
                     <div id="explanation-text" class="leading-relaxed"></div>
                 </div>
             </div>
-            <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-                <button id="prev-button" disabled class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+            <div class="flex justify-between items-center pt-4 border-t border-gray-700">
+                <button id="prev-button" disabled class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
                 <button id="next-button" disabled class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
                 <button id="finish-button" disabled class="hidden-element bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md shadow transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Finish Quiz</button>
             </div>
@@ -126,11 +166,12 @@
 
         <div id="results-page" class="hidden-element p-8 md:p-12 rounded-lg text-center">
             <svg class="w-16 h-16 mx-auto text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Quiz Completed!</h2>
-            <p class="text-xl text-gray-700 mb-8">Your Score: <span id="final-score" class="font-bold text-indigo-600 text-2xl">0 / 0</span></p>
+            <h2 class="text-3xl font-bold text-white mb-4">Quiz Completed!</h2>
+            <p class="text-xl text-gray-300 mb-8">Your Score: <span id="final-score" class="font-bold text-indigo-400 text-2xl">0 / 0</span></p>
             <div class="space-y-3 md:space-y-0 md:space-x-4 flex flex-col md:flex-row justify-center">
                 <button id="restart-quiz" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Restart with Same Settings</button>
                 <button id="new-quiz" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Start New Quiz</button>
+                <button id="save-history" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-md shadow transition duration-300">Save to History</button>
             </div>
         </div>
     </div>
@@ -167,6 +208,7 @@
         const finalScoreElement = document.getElementById('final-score');
         const restartQuizButton = document.getElementById('restart-quiz');
         const newQuizButton = document.getElementById('new-quiz');
+        const saveHistoryButton = document.getElementById('save-history');
 
         // --- State Variables ---
         let apiKey = '';
@@ -216,6 +258,21 @@
             } else {
                 console.warn("MathJax not ready.");
             }
+        }
+
+        function saveToHistory() {
+            const history = JSON.parse(localStorage.getItem('quizHistory') || '[]');
+            const entry = {
+                date: new Date().toISOString(),
+                prompt: quizSettings.prompt,
+                numQuestions: quizSettings.numQuestions,
+                score: score,
+                total: currentQuestions.length
+            };
+            history.push(entry);
+            localStorage.setItem('quizHistory', JSON.stringify(history));
+            alert(`Score saved to history!\nScore: ${score}/${currentQuestions.length}\nPrompt: ${quizSettings.prompt}`);
+            console.log('Quiz History:', history);
         }
 
         // --- Setup Page Logic ---
@@ -312,6 +369,8 @@
             showPage('customization-page');
             hideError(customizationError);
         });
+
+        saveHistoryButton.addEventListener('click', saveToHistory);
 
         // --- API and Question Generation ---
         async function generateSingleQuestion(questionType, modelName, attemptNum, totalRequested) {
@@ -490,7 +549,7 @@
             questionData.options.forEach((option, i) => {
                 const button = document.createElement('button');
                 button.textContent = option;
-                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'border-gray-300', 'rounded-md', 'shadow-sm', 'bg-white', 'hover:bg-gray-100', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
+                button.classList.add('option-button', 'w-full', 'text-left', 'p-3', 'border', 'rounded-md', 'shadow-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-1', 'focus:ring-indigo-400', 'transition', 'duration-150');
                 button.dataset.index = i;
                 button.onclick = () => selectAnswer(index, i);
                 optionsContainer.appendChild(button);
@@ -528,8 +587,8 @@
             highlightAnswer(selectedOptionIndex, isCorrect, questionIndex);
             disableOptions();
             feedbackTextElement.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
-            feedbackTextElement.classList.add(isCorrect ? 'text-green-600' : 'text-red-600');
-            feedbackTextElement.classList.remove(!isCorrect ? 'text-green-600' : 'text-red-600');
+            feedbackTextElement.classList.add(isCorrect ? 'text-green-500' : 'text-red-500');
+            feedbackTextElement.classList.remove(!isCorrect ? 'text-green-500' : 'text-red-500');
             showExplanation(questionData);
             if (currentQuestionIndex === currentQuestions.length - 1) finishButton.disabled = false;
             else nextButton.disabled = false;
@@ -549,7 +608,7 @@
             const buttons = optionsContainer.querySelectorAll('button');
             const correctIndex = currentQuestions[questionIndex].correctAnswerIndex;
             buttons.forEach((button, i) => {
-                button.classList.remove('selected-answer', 'correct-answer', 'incorrect-answer', 'hover:bg-gray-100', 'opacity-80');
+                button.classList.remove('selected-answer', 'correct-answer', 'incorrect-answer', 'hover:bg-gray-600', 'opacity-80');
                 if (i === selectedIndex) {
                     button.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
                 } else if (i === correctIndex && !isCorrect) {
@@ -562,7 +621,7 @@
             optionsContainer.querySelectorAll('button').forEach(button => {
                 button.disabled = true;
                 button.classList.add('opacity-75', 'cursor-not-allowed');
-                button.classList.remove('hover:bg-gray-100');
+                button.classList.remove('hover:bg-gray-600');
             });
         }
 
@@ -570,7 +629,7 @@
             optionsContainer.querySelectorAll('button').forEach(button => {
                 button.disabled = false;
                 button.classList.remove('opacity-75', 'cursor-not-allowed', 'correct-answer', 'incorrect-answer', 'opacity-80');
-                button.classList.add('hover:bg-gray-100');
+                button.classList.add('hover:bg-gray-600');
             });
         }
 
