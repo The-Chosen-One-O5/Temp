@@ -85,11 +85,11 @@
             <div class="space-y-5">
                 <div>
                     <label for="questionPrompt" class="block text-sm font-medium text-gray-300 mb-1">Question Prompt <span class="text-red-500">*</span></label>
-                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Complex Thermodynamics questions with diagrams for NEET UG'" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs, and if diagrams/structures are needed.</p>
+                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics) 2023', 'Complex Thermodynamics questions with diagrams for NEET UG'" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs with year (e.g., JEE Main 2023), and if diagrams/structures are needed.</p>
                 </div>
                 <div>
-                    <label for="numQuestions" class="block text-sm font-medium text-gray-300 mb-1">Number of Questions}
+                    <label for="numQuestions" class="block text-sm font-medium text-gray-300 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
                     <input type="number" id="numQuestions" name="numQuestions" min="1" max="25" value="5" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                 </div>
                 <div id="customization-error" class="text-red-400 text-sm hidden-element font-medium text-center p-2 bg-red-900 rounded-md border border-red-800"></div>
@@ -212,9 +212,9 @@
         const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
         const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
         const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
-        const MAX_RETRIES = 2;
+        const MAX_RETRIES = 3; // Increased from 2 to 3
         const RETRY_DELAY_MS = 2000;
-        const REQUEST_TIMEOUT_MS = 120000; // Increased timeout for complex requests
+        const REQUEST_TIMEOUT_MS = 120000;
 
         // --- Helper Functions ---
         function showPage(pageId) {
@@ -401,6 +401,13 @@
         // --- API and Question Generation ---
         async function generateSingleQuestion(questionType, modelName, attemptNum, totalRequested) {
             const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
+            
+            // Detect if PYQs with a specific year is mentioned
+            const pyqRegex = /PYQs.*(\d{4})/i;
+            const pyqMatch = questionType.match(pyqRegex);
+            const isPyqWithYear = pyqMatch && pyqMatch[1];
+            const year = isPyqWithYear ? pyqMatch[1] : null;
+
             const prompt = `
                 Generate a single unique multiple-choice question (MCQ) based on: "${questionType}". 
                 The question must:
@@ -411,16 +418,16 @@
                 - Provide the correct answer as "correctAnswerIndex" (0-based index).
                 - Include a detailed explanation.
                 - If diagrams or structures are needed, include an array of image URLs from the web in "imageUrls" (search the web if necessary, e.g., Creative Commons or educational sites).
+                ${isPyqWithYear ? `- Since "PYQs" and year "${year}" are mentioned, search for and base the question on a real Previous Year Question from ${year} for the specified exam (e.g., JEE Main, NEET). Use web search to find authentic questions from that year.` : `- If PYQs are requested without a year, base the question on typical previous year questions or closely mimic them.`}
                 Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", "explanation", and optional "imageUrls" fields. 
                 Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations where applicable. 
-                If PYQs are requested (e.g., JEE Main 2025), base the question on real previous year questions or closely mimic them. 
                 Ensure the JSON is complete and properly closed.
             `;
 
             const payload = {
                 model: modelName,
                 messages: [
-                    { role: "system", content: "You are an expert AI assistant generating unique, educational MCQs in strict JSON format, capable of sourcing images from the web for complex questions." },
+                    { role: "system", content: "You are an expert AI assistant generating unique, educational MCQs in strict JSON format, capable of sourcing images and real PYQs from the web for complex questions." },
                     { role: "user", content: prompt }
                 ],
                 temperature: 0.5,
