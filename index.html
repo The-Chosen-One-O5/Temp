@@ -13,7 +13,11 @@
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']],
                 processEscapes: true,
-                processEnvironments: true
+                processEnvironments: true,
+                packages: ['base', 'ams', 'chem', 'tikz'] // Added chem and tikz for structures
+            },
+            loader: {
+                load: ['[tex]/chem', '[tex]/tikz'] // Load chemfig and tikz extensions
             },
             svg: {
                 fontCache: 'global',
@@ -49,7 +53,6 @@
         .spinner { border: 4px solid rgba(255, 255, 255, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #8b5cf6; animation: spin 1s ease infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #question-text, #explanation-text, .option-button { word-wrap: break-word; overflow-wrap: break-word; }
-        .question-image { max-width: 100%; height: auto; margin: 1rem 0; border-radius: 4px; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black p-4">
@@ -86,7 +89,7 @@
                 <div>
                     <label for="questionPrompt" class="block text-sm font-medium text-gray-300 mb-1">Question Prompt <span class="text-red-500">*</span></label>
                     <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics) 2023', 'Complex Thermodynamics questions with diagrams for NEET UG'" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs with year (e.g., JEE Main 2023), and if diagrams/structures are needed.</p>
+                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs with year (e.g., JEE Main 2023), and if diagrams/structures are needed (rendered in LaTeX).</p>
                 </div>
                 <div>
                     <label for="numQuestions" class="block text-sm font-medium text-gray-300 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
@@ -119,7 +122,6 @@
             </div>
             <div id="question-container" class="mb-6 p-5 border border-gray-700 rounded-lg bg-gray-900 min-h-[120px] shadow-sm">
                 <p id="question-text" class="text-lg text-gray-200 leading-relaxed">Loading question...</p>
-                <div id="question-images" class="mt-2"></div>
             </div>
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
             <div id="feedback-container" class="min-h-[60px] mb-6">
@@ -127,7 +129,6 @@
                 <div id="explanation-area" class="mt-3 p-4 bg-indigo-900 border border-indigo-800 rounded-lg text-sm text-gray-200 hidden-element shadow-sm">
                     <strong class="text-indigo-300 block mb-1 text-base">Explanation:</strong>
                     <div id="explanation-text" class="leading-relaxed"></div>
-                    <div id="explanation-images" class="mt-2"></div>
                 </div>
             </div>
             <div class="flex justify-between items-center pt-4 border-t border-gray-700">
@@ -176,12 +177,10 @@
         const loadingIndicator = document.getElementById('loading-indicator');
         const loadingText = document.getElementById('loading-text');
         const questionTextElement = document.getElementById('question-text');
-        const questionImagesContainer = document.getElementById('question-images');
         const optionsContainer = document.getElementById('options-container');
         const feedbackTextElement = document.getElementById('feedback-text');
         const explanationArea = document.getElementById('explanation-area');
         const explanationTextElement = document.getElementById('explanation-text');
-        const explanationImagesContainer = document.getElementById('explanation-images');
         const prevButton = document.getElementById('prev-button');
         const nextButton = document.getElementById('next-button');
         const finishButton = document.getElementById('finish-button');
@@ -206,13 +205,13 @@
         let score = 0;
         let quizSettings = { model: '', prompt: '', numQuestions: 0 };
         let scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || [];
-        let generatedQuestionsSet = new Set(); // To track unique questions
+        let generatedQuestionsSet = new Set();
 
         // --- Constants ---
         const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
         const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
         const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
-        const MAX_RETRIES = 3; // Increased from 2 to 3
+        const MAX_RETRIES = 3;
         const RETRY_DELAY_MS = 2000;
         const REQUEST_TIMEOUT_MS = 120000;
 
@@ -246,20 +245,6 @@
                 }
             } else {
                 console.warn("MathJax not ready.");
-            }
-        }
-
-        function addImages(container, imageUrls) {
-            container.innerHTML = '';
-            if (imageUrls && imageUrls.length > 0) {
-                imageUrls.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = 'Question or Explanation Image';
-                    img.classList.add('question-image');
-                    img.onerror = () => img.alt = 'Image failed to load';
-                    container.appendChild(img);
-                });
             }
         }
 
@@ -340,7 +325,7 @@
                 isValid = false;
             }
             if (isValid) {
-                generatedQuestionsSet.clear(); // Reset for new quiz
+                generatedQuestionsSet.clear();
                 startNewQuiz(prompt, num);
             }
         });
@@ -402,7 +387,6 @@
         async function generateSingleQuestion(questionType, modelName, attemptNum, totalRequested) {
             const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
             
-            // Detect if PYQs with a specific year is mentioned
             const pyqRegex = /PYQs.*(\d{4})/i;
             const pyqMatch = questionType.match(pyqRegex);
             const isPyqWithYear = pyqMatch && pyqMatch[1];
@@ -417,17 +401,20 @@
                 - Include exactly 4 options labeled A, B, C, D within an "options" object.
                 - Provide the correct answer as "correctAnswerIndex" (0-based index).
                 - Include a detailed explanation.
-                - If diagrams or structures are needed, include an array of image URLs from the web in "imageUrls" (search the web if necessary, e.g., Creative Commons or educational sites).
+                - If diagrams or structures are needed (e.g., chemical structures, physics diagrams), embed them directly in the "question" or "explanation" fields using LaTeX with packages like \\chemfig (for chemistry) or \\tikz (for general diagrams). For example:
+                  - Chemistry: $$\\chemfig{A-B(=O)-C}$$
+                  - Physics: $$\\begin{tikzpicture} \\draw (0,0) -- (1,1); \\end{tikzpicture}$$
+                - Do NOT include "imageUrls" or rely on external images; all diagrams must be LaTeX-based.
                 ${isPyqWithYear ? `- Since "PYQs" and year "${year}" are mentioned, search for and base the question on a real Previous Year Question from ${year} for the specified exam (e.g., JEE Main, NEET). Use web search to find authentic questions from that year.` : `- If PYQs are requested without a year, base the question on typical previous year questions or closely mimic them.`}
-                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", "explanation", and optional "imageUrls" fields. 
-                Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations where applicable. 
+                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", and "explanation" fields. 
+                Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations and diagrams where applicable. 
                 Ensure the JSON is complete and properly closed.
             `;
 
             const payload = {
                 model: modelName,
                 messages: [
-                    { role: "system", content: "You are an expert AI assistant generating unique, educational MCQs in strict JSON format, capable of sourcing images and real PYQs from the web for complex questions." },
+                    { role: "system", content: "You are an expert AI assistant generating unique, educational MCQs in strict JSON format, capable of creating LaTeX-based diagrams using \\chemfig and \\tikz, and sourcing real PYQs from the web." },
                     { role: "user", content: prompt }
                 ],
                 temperature: 0.5,
@@ -505,8 +492,7 @@
                         question: question.question,
                         options: [question.options.A, question.options.B, question.options.C, question.options.D].filter(opt => opt),
                         correctAnswerIndex: question.correctAnswerIndex,
-                        explanation: question.explanation,
-                        imageUrls: question.imageUrls || []
+                        explanation: question.explanation
                     };
                 } catch (error) {
                     lastError = error;
@@ -582,13 +568,10 @@
             if (index < 0 || index >= currentQuestions.length) return;
             const questionData = currentQuestions[index];
             questionTextElement.textContent = questionData.question;
-            questionImagesContainer.innerHTML = '';
-            addImages(questionImagesContainer, questionData.imageUrls);
             optionsContainer.innerHTML = '';
             feedbackTextElement.textContent = '';
             explanationArea.classList.add('hidden-element');
             explanationTextElement.textContent = '';
-            explanationImagesContainer.innerHTML = '';
 
             questionData.options.forEach((option, i) => {
                 const button = document.createElement('button');
@@ -641,7 +624,6 @@
         async function showExplanation(questionData) {
             if (questionData.explanation) {
                 explanationTextElement.textContent = questionData.explanation;
-                addImages(explanationImagesContainer, questionData.imageUrls);
                 explanationArea.classList.remove('hidden-element');
                 await typesetMathJax([explanationTextElement]);
             } else {
