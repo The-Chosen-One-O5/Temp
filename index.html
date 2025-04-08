@@ -49,6 +49,7 @@
         .spinner { border: 4px solid rgba(255, 255, 255, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #8b5cf6; animation: spin 1s ease infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #question-text, #explanation-text, .option-button { word-wrap: break-word; overflow-wrap: break-word; }
+        .question-image { max-width: 100%; height: auto; margin: 1rem 0; border-radius: 4px; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black p-4">
@@ -84,15 +85,15 @@
             <div class="space-y-5">
                 <div>
                     <label for="questionPrompt" class="block text-sm font-medium text-gray-300 mb-1">Question Prompt <span class="text-red-500">*</span></label>
-                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Easy difficulty Thermodynamics questions for NEET UG'" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
-                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs if needed.</p>
+                    <textarea id="questionPrompt" name="questionPrompt" rows="4" placeholder="E.g., '5 most repeated PYQs from JEE Mains Physics (Kinematics)', 'Complex Thermodynamics questions with diagrams for NEET UG'" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"></textarea>
+                    <p class="mt-1 text-xs text-gray-500">Mention exam, subject, topic, difficulty, PYQs, and if diagrams/structures are needed.</p>
                 </div>
                 <div>
-                    <label for="numQuestions" class="block text-sm font-medium text-gray-300 mb-1">Number of Questions (1-25) <span class="text-red-500">*</span></label>
+                    <label for="numQuestions" class="block text-sm font-medium text-gray-300 mb-1">Number of Questions}
                     <input type="number" id="numQuestions" name="numQuestions" min="1" max="25" value="5" class="w-full px-4 py-2 border border-gray-600 rounded-md shadow-sm bg-gray-700 text-gray-200 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                 </div>
                 <div id="customization-error" class="text-red-400 text-sm hidden-element font-medium text-center p-2 bg-red-900 rounded-md border border-red-800"></div>
-                <button id="start-quiz" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"> Generate & Start Quiz</button>
+                <button id="start-quiz" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Generate & Start Quiz</button>
                 <button id="back-to-setup" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">Back to API Setup</button>
             </div>
             <div id="loading-indicator" class="hidden-element mt-6 text-center">
@@ -118,6 +119,7 @@
             </div>
             <div id="question-container" class="mb-6 p-5 border border-gray-700 rounded-lg bg-gray-900 min-h-[120px] shadow-sm">
                 <p id="question-text" class="text-lg text-gray-200 leading-relaxed">Loading question...</p>
+                <div id="question-images" class="mt-2"></div>
             </div>
             <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
             <div id="feedback-container" class="min-h-[60px] mb-6">
@@ -125,6 +127,7 @@
                 <div id="explanation-area" class="mt-3 p-4 bg-indigo-900 border border-indigo-800 rounded-lg text-sm text-gray-200 hidden-element shadow-sm">
                     <strong class="text-indigo-300 block mb-1 text-base">Explanation:</strong>
                     <div id="explanation-text" class="leading-relaxed"></div>
+                    <div id="explanation-images" class="mt-2"></div>
                 </div>
             </div>
             <div class="flex justify-between items-center pt-4 border-t border-gray-700">
@@ -173,10 +176,12 @@
         const loadingIndicator = document.getElementById('loading-indicator');
         const loadingText = document.getElementById('loading-text');
         const questionTextElement = document.getElementById('question-text');
+        const questionImagesContainer = document.getElementById('question-images');
         const optionsContainer = document.getElementById('options-container');
         const feedbackTextElement = document.getElementById('feedback-text');
         const explanationArea = document.getElementById('explanation-area');
         const explanationTextElement = document.getElementById('explanation-text');
+        const explanationImagesContainer = document.getElementById('explanation-images');
         const prevButton = document.getElementById('prev-button');
         const nextButton = document.getElementById('next-button');
         const finishButton = document.getElementById('finish-button');
@@ -201,14 +206,15 @@
         let score = 0;
         let quizSettings = { model: '', prompt: '', numQuestions: 0 };
         let scoreHistory = JSON.parse(localStorage.getItem('scoreHistory')) || [];
+        let generatedQuestionsSet = new Set(); // To track unique questions
 
         // --- Constants ---
         const OPENROUTER_DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
         const OPENROUTER_REFERER_URL = window.location.origin || 'http://localhost';
         const OPENROUTER_APP_NAME = 'AI-PYQ-Bot';
-        const MAX_RETRIES = 1;
+        const MAX_RETRIES = 2;
         const RETRY_DELAY_MS = 2000;
-        const REQUEST_TIMEOUT_MS = 90000;
+        const REQUEST_TIMEOUT_MS = 120000; // Increased timeout for complex requests
 
         // --- Helper Functions ---
         function showPage(pageId) {
@@ -240,6 +246,20 @@
                 }
             } else {
                 console.warn("MathJax not ready.");
+            }
+        }
+
+        function addImages(container, imageUrls) {
+            container.innerHTML = '';
+            if (imageUrls && imageUrls.length > 0) {
+                imageUrls.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'Question or Explanation Image';
+                    img.classList.add('question-image');
+                    img.onerror = () => img.alt = 'Image failed to load';
+                    container.appendChild(img);
+                });
             }
         }
 
@@ -320,6 +340,7 @@
                 isValid = false;
             }
             if (isValid) {
+                generatedQuestionsSet.clear(); // Reset for new quiz
                 startNewQuiz(prompt, num);
             }
         });
@@ -381,22 +402,25 @@
         async function generateSingleQuestion(questionType, modelName, attemptNum, totalRequested) {
             const url = baseUrl.replace(/\/$/, '') + '/chat/completions';
             const prompt = `
-                Generate a single multiple-choice question (MCQ) based on: "${questionType}". 
-                The question must have:
-                - A question stem (e.g., similar to JEE Main 2025 PYQs like 'The position of a particle moving on x-axis is given by x(t) = A sin t + B cos^2 t + C t^2 + D, where t is time. The dimension of ABC/D is').
-                - Exactly 4 options labeled A, B, C, D within an "options" object.
-                - The correct answer as "correctAnswerIndex" (0-based index).
-                - An explanation.
-                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", and "explanation" fields. 
+                Generate a single unique multiple-choice question (MCQ) based on: "${questionType}". 
+                The question must:
+                - Be distinct from previously generated questions in this session.
+                - Support complex and large questions, including those requiring diagrams or structures (e.g., organic chemistry mechanisms, physics free-body diagrams).
+                - Have a question stem (e.g., similar to JEE Main 2025 PYQs like 'The position of a particle moving on x-axis is given by x(t) = A sin t + B cos^2 t + C t^2 + D, where t is time. The dimension of ABC/D is').
+                - Include exactly 4 options labeled A, B, C, D within an "options" object.
+                - Provide the correct answer as "correctAnswerIndex" (0-based index).
+                - Include a detailed explanation.
+                - If diagrams or structures are needed, include an array of image URLs from the web in "imageUrls" (search the web if necessary, e.g., Creative Commons or educational sites).
+                Format the response as a valid JSON object with "question", "options" (with A, B, C, D as properties), "correctAnswerIndex", "explanation", and optional "imageUrls" fields. 
                 Use LaTeX (e.g., $...$ or $$...$$) for mathematical equations where applicable. 
-                If PYQs are requested (e.g., JEE Main 2025), ensure the question is based on real previous year questions or closely mimics them. 
-                Do not generate random unrelated questions. Ensure the JSON is complete and properly closed.
+                If PYQs are requested (e.g., JEE Main 2025), base the question on real previous year questions or closely mimic them. 
+                Ensure the JSON is complete and properly closed.
             `;
 
             const payload = {
                 model: modelName,
                 messages: [
-                    { role: "system", content: "You are an expert AI assistant generating educational MCQs in strict JSON format." },
+                    { role: "system", content: "You are an expert AI assistant generating unique, educational MCQs in strict JSON format, capable of sourcing images from the web for complex questions." },
                     { role: "user", content: prompt }
                 ],
                 temperature: 0.5,
@@ -464,11 +488,18 @@
                         throw new Error(`Invalid question structure for question ${attemptNum}: ${JSON.stringify(question)}`);
                     }
 
+                    if (generatedQuestionsSet.has(question.question)) {
+                        throw new Error(`Duplicate question detected for question ${attemptNum}: ${question.question}`);
+                    }
+
+                    generatedQuestionsSet.add(question.question);
+
                     return {
                         question: question.question,
                         options: [question.options.A, question.options.B, question.options.C, question.options.D].filter(opt => opt),
                         correctAnswerIndex: question.correctAnswerIndex,
-                        explanation: question.explanation
+                        explanation: question.explanation,
+                        imageUrls: question.imageUrls || []
                     };
                 } catch (error) {
                     lastError = error;
@@ -544,10 +575,13 @@
             if (index < 0 || index >= currentQuestions.length) return;
             const questionData = currentQuestions[index];
             questionTextElement.textContent = questionData.question;
+            questionImagesContainer.innerHTML = '';
+            addImages(questionImagesContainer, questionData.imageUrls);
             optionsContainer.innerHTML = '';
             feedbackTextElement.textContent = '';
             explanationArea.classList.add('hidden-element');
             explanationTextElement.textContent = '';
+            explanationImagesContainer.innerHTML = '';
 
             questionData.options.forEach((option, i) => {
                 const button = document.createElement('button');
@@ -600,6 +634,7 @@
         async function showExplanation(questionData) {
             if (questionData.explanation) {
                 explanationTextElement.textContent = questionData.explanation;
+                addImages(explanationImagesContainer, questionData.imageUrls);
                 explanationArea.classList.remove('hidden-element');
                 await typesetMathJax([explanationTextElement]);
             } else {
